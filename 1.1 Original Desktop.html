@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Cover Generator V2 - CM108</title>
+    
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        prompt: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        newsBlue: '#00c0fa',
+                        newsDark: '#0f172a'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .canvas-bg {
+            background-color: #f1f5f9;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 36px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #00c0fa;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            margin-top: -8px;
+        }
+
+        input[type=number]::-webkit-inner-spin-button { display: none; }
+
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 font-prompt min-h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm z-50">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-newsBlue flex items-center justify-center rounded-lg shadow-lg shadow-blue-500/20">
+                <i class="ph-bold ph-layout text-white text-lg"></i>
+            </div>
+            <h1 class="text-lg font-bold uppercase tracking-tight">News Cover V2 <span class="text-newsBlue font-black">CM108</span></h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button id="undo-btn" onclick="undo()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-400 disabled:opacity-30 transition" title="ย้อนกลับ">
+                <i class="ph-bold ph-arrow-u-up-left text-xl"></i>
+            </button>
+            <div class="h-6 w-px bg-slate-200 mx-1"></div>
+            <button onclick="exportImage()" class="bg-newsDark hover:bg-black text-white px-5 py-2 rounded-xl font-bold flex items-center gap-2 transition active:scale-95 shadow-md">
+                <i class="ph-bold ph-download-simple"></i>
+                <span>บันทึกรูปภาพ</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col lg:flex-row h-[calc(100vh-65px)]">
+        
+        <!-- Sidebar Controls -->
+        <aside class="w-full lg:w-[450px] bg-white border-r border-slate-200 overflow-y-auto no-scrollbar flex flex-col shadow-inner relative z-10">
+            
+            <div class="p-5 border-b border-slate-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <i class="ph-bold ph-image"></i> รูปภาพ & กรอบ (Frame)
+                    </h3>
+                    <button type="button" onclick="resetBG()" class="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">รีเซ็ตภาพ</button>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" onclick="document.getElementById('bg-upload').click()" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold text-newsBlue hover:bg-blue-50 transition shadow-sm">
+                            <i class="ph ph-image mr-1"></i> 1. เปลี่ยนภาพข่าว
+                        </button>
+                        <button type="button" onclick="document.getElementById('frame-upload').click()" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold text-emerald-500 hover:bg-emerald-50 transition shadow-sm" title="ต้องเป็นไฟล์ PNG พื้นใสตรงกลาง">
+                            <i class="ph ph-frame-corners mr-1"></i> 2. เปลี่ยนกรอบ (PNG)
+                        </button>
+                        <input type="file" id="bg-upload" accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0;" tabindex="-1">
+                        <input type="file" id="frame-upload" accept="image/png, image/webp" style="position: absolute; width: 1px; height: 1px; opacity: 0;" tabindex="-1">
+                    </div>
+                    
+                    <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
+                            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-tight">เบลอพื้นหลัง (กรณีรูปไม่เต็ม)</label>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="bg-blur-toggle" class="sr-only peer">
+                                <div class="w-8 h-4 bg-slate-300 rounded-full peer peer-checked:bg-newsBlue transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">ซูมภาพ <span id="bg-scale-val" class="text-newsBlue float-right">1.0</span></label>
+                                <input type="range" id="bg-scale" min="0.1" max="5" step="0.01" value="1" class="w-full">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">เลื่อนซ้าย-ขวา (X)</label>
+                                <input type="range" id="bg-x" min="-1500" max="1500" step="1" value="0" class="w-full">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-400 block mb-1">เลื่อนบน-ล่าง (Y)</label>
+                                <input type="range" id="bg-y" min="-1500" max="1500" step="1" value="0" class="w-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 flex-grow">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <i class="ph-bold ph-text-aa"></i> พาดหัวข่าว & วันที่
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="resetTextGlobal()" class="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">รีเซ็ต</button>
+                        <div class="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Gap:</span>
+                            <input type="number" id="line-gap" value="8" class="w-8 bg-transparent text-center text-xs font-bold outline-none text-newsBlue">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-[10px] font-bold text-blue-500 uppercase">เลื่อนข้อความทั้งก้อน (พาดหัว+วันที่)</label>
+                        <input type="number" id="text-y-num" value="-10" class="text-[10px] font-bold text-blue-500 bg-transparent text-right outline-none w-10">
+                    </div>
+                    <input type="range" id="text-y" min="-800" max="800" step="1" value="-10" class="w-full accent-blue-500">
+                </div>
+
+                <!-- Input วันที่ -->
+                <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">ข้อความวันที่</h3>
+                    <input type="text" id="date-text" value="" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-newsBlue outline-none font-medium text-center font-prompt">
+                </div>
+
+                <div id="lines-container" class="space-y-4"></div>
+            </div>
+
+        </aside>
+
+        <!-- Preview Area -->
+        <section id="preview-wrapper" class="flex-grow canvas-bg relative p-6 flex justify-center items-center overflow-hidden z-0">
+            
+            <div id="scale-container" class="shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-black relative">
+                <div id="capture-area" style="width: 1080px; height: 1350px; transform-origin: top left;"></div>
+            </div>
+
+            <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm z-[100] flex flex-col items-center justify-center hidden">
+                <div class="w-14 h-14 border-4 border-slate-100 border-t-newsBlue rounded-full animate-spin"></div>
+                <p class="mt-4 font-bold text-slate-700 uppercase tracking-tighter">กำลังบันทึกภาพ...</p>
+                <p class="text-xs text-slate-400 mt-1">กำลังเรนเดอร์กราฟิกและกรอบภาพ</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const defaultFrame = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjEzNTAiIHZpZXdCb3g9IjAgMCAxMDgwIDEzNTAiPgo8IS0tIFRvcC9TaWRlIEJvcmRlcnMgLS0+CjxwYXRoIGQ9Ik0wLDBIMTA4MFYxMzUwSDBaIE00MCw0MEgxMDQwVjEwODBINDBaIiBmaWxsPSIjMDBjMGZhIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPCEtLSBCb3R0b20gRm9vdGVyIEFyZWEgLS0+CjxyZWN0IHg9IjAiIHk9IjEwODAiIHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjI3MCIgZmlsbD0id2hpdGUiLz4KPHRleHQgeD0iNTQwIiB5PSIxMjAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNwb25zb3IgJmFtcDsgRm9vdGVyIEFyZWE8L3RleHQ+CjwhLS0gVG9wIExlZnQgTG9nbyAtLT4KPGNpcmNsZSBjeD0iMTMwIiBjeT0iMTMwIiByPSI4MCIgZmlsbD0iIzAwYzBmYSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSI4Ii8+Cjx0ZXh0IHg9IjEzMCIgeT0iMTQwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DTTEwODwvdGV4dD4KPC9zdmc+";
+
+        // ฟังก์ชันสร้างวันที่ปัจจุบันแบบไทย
+        function getThaiToday() {
+            const months = [
+                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+            ];
+            const d = new Date();
+            const day = d.getDate();
+            const month = months[d.getMonth()];
+            const year = d.getFullYear() + 543;
+            return `- ${day} ${month} ${year} -`;
+        }
+
+        const currentThaiDate = getThaiToday();
+
+        // --- App State ---
+        let state = {
+            lines: [
+                { text: 'ประกันสังคม คว้ารางวัล', color: '#4bfafc', bgColor: 'transparent', size: 97, align: 'center', shadow: true, shadowOffset: 3, stroke: 6, yOffset: 25 },
+                { text: 'สุดยอดหน่วยงานภาครัฐ', color: '#ffffff', bgColor: '#0bc8fa', size: 91, align: 'center', shadow: true, shadowOffset: 3, stroke: 6, yOffset: 0 },
+                { text: 'จากเวที LINE THAILAND AWARDS 2025', color: '#ff9012', bgColor: 'transparent', size: 53, align: 'center', shadow: true, shadowOffset: 0, stroke: 0, yOffset: 0 }
+            ],
+            bg: { src: 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?q=80&w=1080&auto=format&fit=crop', scale: 1, x: 0, y: 0, blur: false },
+            frame: { src: defaultFrame },
+            textPos: { y: -10 },
+            gap: 8,
+            date: { text: currentThaiDate }
+        };
+
+        let historyStack = [];
+        const defaultColors = [
+            { name: 'ฟ้าพรีเมียม', hex: '#4bfafc' }, { name: 'ฟ้า CM', hex: '#0bc8fa' }, { name: 'ขาว', hex: '#ffffff' }, 
+            { name: 'ส้มพิเศษ', hex: '#ff9012' }, { name: 'ส้มทอง', hex: '#f59e0b' }, { name: 'ดำ', hex: '#000000' }
+        ];
+
+        function saveToHistory() {
+            historyStack.push(JSON.parse(JSON.stringify(state)));
+            if (historyStack.length > 30) historyStack.shift();
+            updateUndoButton();
+        }
+
+        function undo() {
+            if (historyStack.length === 0) return;
+            state = historyStack.pop();
+            renderAll();
+            syncInputs();
+            updateUndoButton();
+        }
+
+        function updateUndoButton() {
+            const btn = document.getElementById('undo-btn');
+            if (btn) btn.disabled = historyStack.length === 0;
+        }
+
+        function updateLine(idx, key, val) {
+            const isSlider = ['size', 'yOffset', 'stroke', 'shadowOffset'].includes(key);
+            if (!isSlider) saveToHistory();
+            state.lines[idx][key] = val;
+            
+            if (isSlider) {
+                const rangeInput = document.getElementById(`range-${key}-${idx}`);
+                const numInput = document.getElementById(`num-${key}-${idx}`);
+                if (rangeInput) rangeInput.value = val;
+                if (numInput) numInput.value = val;
+            }
+            
+            renderAll();
+            if (!isSlider) renderControls(); 
+        }
+
+        function resetBG() {
+            saveToHistory();
+            state.bg.scale = 1; state.bg.x = 0; state.bg.y = 0; state.bg.blur = false;
+            syncInputs(); renderAll();
+        }
+
+        function resetLine(idx) {
+            saveToHistory();
+            const defConfigs = [
+                { color: '#4bfafc', bgColor: 'transparent', size: 97, align: 'center', shadow: true, shadowOffset: 3, stroke: 6, yOffset: 25 },
+                { color: '#ffffff', bgColor: '#0bc8fa', size: 91, align: 'center', shadow: true, shadowOffset: 3, stroke: 6, yOffset: 0 },
+                { color: '#ff9012', bgColor: 'transparent', size: 53, align: 'center', shadow: true, shadowOffset: 0, stroke: 0, yOffset: 0 }
+            ];
+            const currentText = state.lines[idx].text;
+            state.lines[idx] = { ...defConfigs[idx], text: currentText };
+            renderAll();
+            renderControls();
+        }
+
+        function resetTextGlobal() {
+            saveToHistory();
+            state.textPos.y = -10;
+            state.gap = 8;
+            state.date = { text: getThaiToday() };
+            syncInputs();
+            renderAll();
+        }
+
+        function generateArtworkHTML(isExport = false, exportUnifiedBgSrc = null) {
+            let linesHTML = '';
+            
+            state.lines.forEach((line, idx) => {
+                if (!line.text.trim()) return;
+                
+                const padding = line.bgColor !== 'transparent' ? 'padding: 22px 30px 16px 30px;' : 'padding: 0;';
+                const radius = line.bgColor !== 'transparent' ? 'border-radius: 16px;' : '';
+                
+                let shadowParts = [];
+                
+                if (line.stroke > 0) {
+                    for (let r = 1; r <= line.stroke; r++) {
+                        for (let a = 0; a < 360; a += 15) {
+                            let rad = a * Math.PI / 180;
+                            let dx = (Math.cos(rad) * r).toFixed(1);
+                            let dy = (Math.sin(rad) * r).toFixed(1);
+                            shadowParts.push(`${dx}px ${dy}px 0px black`);
+                        }
+                    }
+                }
+                
+                if (line.shadow && line.shadowOffset > 0) {
+                    for (let d = 0.5; d <= line.shadowOffset; d += 0.5) {
+                        shadowParts.push(`${d}px ${d}px 0px rgba(0,0,0,1)`); 
+                        if (line.stroke > 0) {
+                            for (let r = 1; r <= line.stroke; r++) {
+                                for (let a = 0; a < 360; a += 30) { 
+                                    let rad = a * Math.PI / 180;
+                                    let dx = (Math.cos(rad) * r + d).toFixed(1);
+                                    let dy = (Math.sin(rad) * r + d).toFixed(1);
+                                    shadowParts.push(`${dx}px ${dy}px 0px rgba(0,0,0,1)`);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                const finalShadowStyle = shadowParts.length > 0 ? `text-shadow: ${shadowParts.join(', ')};` : '';
+
+                let justify = 'flex-start';
+                if (line.align === 'center') justify = 'center';
+                if (line.align === 'right') justify = 'flex-end';
+
+                linesHTML += `
+                    <div style="display: flex; justify-content: ${justify}; width: 100%; transform: translateY(${line.yOffset}px);">
+                        <div class="highlight-box-export-fix" style="background-color: ${line.bgColor}; ${radius} ${padding} box-sizing: border-box;">
+                            <span style="color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; ${finalShadowStyle}">${line.text}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // ปรับขนาดฟอนต์ (34px) และความหนา (600) ของวันที่ในหน้าพรีวิวให้เท่ากับตอน Export
+            // แก้ไข: ปรับลด margin-top จาก 25px เหลือ 15px เพื่อขยับขึ้น 1 สเตป
+            const textGroupHTML = `
+                <div id="headlines-export-wrapper" style="position: absolute; bottom: 280px; left: 0; width: 1080px; display: flex; flex-direction: column; align-items: center; z-index: 20; transform: translateY(${state.textPos.y}px);">
+                    <div style="display: flex; flex-direction: column; width: 1040px; gap: ${parseInt(state.gap) + 20}px;">
+                        ${linesHTML}
+                    </div>
+                    <div id="date-container-export" style="margin-top: 15px; display: flex; justify-content: center;">
+                        <span id="date-text-export-span" style="color: white; font-size: 34px; font-weight: 600; text-shadow: 0px 2px 5px rgba(0,0,0,0.8); line-height: 1.2;">${state.date.text}</span>
+                    </div>
+                </div>
+            `;
+
+            const frameLayerHTML = `
+                <img src="${state.frame.src}" style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 30; pointer-events: none; object-fit: contain;" crossorigin="anonymous">
+            `;
+
+            const blurValPreview = 15; 
+            let blurLayerHTML = '';
+            let fgContainerHTML = '';
+
+            if (state.bg.blur) {
+                if (isExport && exportUnifiedBgSrc) {
+                    blurLayerHTML = `<div style="position: absolute; top: 0; left: -1px; width: 1082px; height: 1352px; z-index: 1; background-color: #000;"><img src="${exportUnifiedBgSrc}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>`;
+                    fgContainerHTML = ``;
+                } else {
+                    blurLayerHTML = `<div style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; z-index: 1; background-color: #000;"><img src="${state.bg.src}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover; filter: blur(${blurValPreview}px) brightness(0.6); -webkit-filter: blur(${blurValPreview}px) brightness(0.6);"></div>`;
+                    let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); box-shadow: 0 0 60px rgba(0,0,0,0.65); border: none !important; outline: none !important;`;
+                    fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin="anonymous"></div>`;
+                }
+            } else {
+                let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); border: none !important; outline: none !important;`;
+                fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin=\"anonymous\"></div>`;
+            }
+
+            return `
+                <div style="width: 1080px; height: 1350px; position: relative; overflow: hidden; background-color: #000; box-sizing: border-box;">
+                    ${blurLayerHTML}
+                    ${fgContainerHTML}
+                    <div style="position: absolute; bottom: 0px; left: 0px; right: 0px; height: 850px; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 78%, rgba(0,0,0,0.5) 86%, transparent 90%); z-index: 10; pointer-events: none;"></div>
+                    ${textGroupHTML}
+                    ${frameLayerHTML}
+                </div>
+            `;
+        }
+
+        function renderAll() {
+            const area = document.getElementById('capture-area');
+            if (area) {
+                area.innerHTML = generateArtworkHTML(false, null);
+                const highlights = area.querySelectorAll('.highlight-box-export-fix');
+                highlights.forEach((box, index) => {
+                    if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                        let offset = 5;
+                        box.style.position = 'relative';
+                        box.style.top = `${offset}px`;
+                        const textSpan = box.querySelector('span');
+                        if (textSpan) {
+                            textSpan.style.position = 'relative';
+                            textSpan.style.top = `${-offset}px`;
+                        }
+                    }
+                });
+            }
+            const scaleLbl = document.getElementById('bg-scale-val');
+            const posNum = document.getElementById('text-y-num');
+            if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
+            if (posNum) posNum.value = state.textPos.y;
+        }
+
+        function renderControls() {
+            const container = document.getElementById('lines-container');
+            container.innerHTML = '';
+            
+            state.lines.forEach((line, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200 rounded-2xl p-4 space-y-4 shadow-sm hover:border-newsBlue/20 transition-all";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-newsBlue uppercase tracking-widest flex items-center gap-1.5">
+                            บรรทัดที่ ${idx+1}
+                            <button onclick="resetLine(${idx})" class="w-5 h-5 flex items-center justify-center rounded bg-blue-50 text-newsBlue hover:bg-red-50 hover:text-red-500 transition" title="รีเซ็ตสไตล์บรรทัดนี้">
+                                <i class="ph ph-arrow-counter-clockwise"></i>
+                            </button>
+                        </span>
+                        <div class="flex gap-1.5">
+                            <button onclick="updateLine(${idx}, 'align', 'left')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'left' ? 'bg-newsBlue text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'} transition"><i class="ph ph-text-align-left"></i></button>
+                            <button onclick="updateLine(${idx}, 'align', 'center')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'center' ? 'bg-newsBlue text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'} transition"><i class="ph ph-text-align-center"></i></button>
+                            <button onclick="updateLine(${idx}, 'shadow', ${!line.shadow})" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.shadow ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-400'} transition"><i class="ph ph-drop"></i></button>
+                        </div>
+                    </div>
+                    
+                    <textarea oninput="updateLine(${idx}, 'text', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-newsBlue outline-none transition-all resize-none font-prompt" rows="1">${line.text}</textarea>
+                    
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ฟอนต์:</label><input type="number" id="num-size-${idx}" min="30" max="250" value="${line.size}" oninput="updateLine(${idx}, 'size', parseInt(this.value) || 30)" class="w-12 text-xs font-bold text-newsBlue bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
+                                <input type="range" id="range-size-${idx}" min="30" max="250" value="${line.size}" oninput="updateLine(${idx}, 'size', parseInt(this.value))" class="w-full">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขยับ Y:</label><input type="number" id="num-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-emerald-500 bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
+                                <input type="range" id="range-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value))" class="w-full accent-emerald-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขอบดำ:</label><input type="number" id="num-stroke-${idx}" min="0" max="15" value="${line.stroke}" oninput="updateLine(${idx}, 'stroke', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-black bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
+                                <input type="range" id="range-stroke-${idx}" min="0" max="15" value="${line.stroke}" oninput="updateLine(${idx}, 'stroke', parseInt(this.value))" class="w-full accent-black">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ระยะเงา:</label><input type="number" id="num-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-gray-600 bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
+                                <input type="range" id="range-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value))" class="w-full accent-gray-600">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <label class="text-[10px] font-bold text-slate-400 w-12">สีอักษร:</label>
+                            <div class="flex gap-1.5 flex-wrap">
+                                ${defaultColors.map(c => `<button onclick="updateLine(${idx}, 'color', '${c.hex}')" class="w-6 h-6 rounded-full border border-slate-200 shadow-sm transition hover:scale-110" style="background-color: ${c.hex}; ${line.color === c.hex ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>`).join('')}
+                                <input type="color" value="${line.color}" oninput="updateLine(${idx}, 'color', this.value)" class="w-6 h-6 p-0 border-0 rounded-full cursor-pointer shadow-sm">
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="text-[10px] font-bold text-slate-400 w-12">ไฮไลท์:</label>
+                            <div class="flex gap-1.5 items-center">
+                                <button onclick="updateLine(${idx}, 'bgColor', 'transparent')" class="text-[9px] font-bold px-2 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">ไม่มี</button>
+                                <button onclick="updateLine(${idx}, 'bgColor', '#0bc8fa')" class="w-6 h-6 rounded-full bg-[#0bc8fa] border border-slate-300 shadow-sm" style="${line.bgColor === '#0bc8fa' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
+                                <button onclick="updateLine(${idx}, 'bgColor', '#ffffff')" class="w-6 h-6 rounded-full bg-white border border-slate-300 shadow-sm" style="${line.bgColor === '#ffffff' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
+                                <input type="color" value="${line.bgColor === 'transparent' ? '#ffffff' : line.bgColor}" oninput="updateLine(${idx}, 'bgColor', this.value)" class="w-6 h-6 p-0 border-0 rounded-full cursor-pointer shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function syncInputs() {
+            const ids = ['bg-scale', 'bg-x', 'bg-y', 'bg-blur-toggle', 'text-y', 'text-y-num', 'line-gap', 'date-text'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (id === 'bg-blur-toggle') el.checked = state.bg.blur;
+                else if (id === 'date-text') el.value = state.date.text;
+                else if (id === 'bg-scale') el.value = state.bg.scale;
+                else if (id === 'bg-x') el.value = state.bg.x;
+                else if (id === 'bg-y') el.value = state.bg.y;
+                else if (id === 'text-y' || id === 'text-y-num') el.value = state.textPos.y;
+                else if (id === 'line-gap') el.value = state.gap;
+            });
+        }
+
+        function handleResize() {
+            const wrapper = document.getElementById('preview-wrapper');
+            const container = document.getElementById('scale-container');
+            const artwork = document.getElementById('capture-area');
+            if (!wrapper || !container || !artwork) return;
+            const w = wrapper.clientWidth - 40;
+            const h = wrapper.clientHeight - 40;
+            const scale = Math.min(w / 1080, h / 1350, 1);
+            artwork.style.transform = `scale(${scale})`;
+            artwork.style.transformOrigin = `top left`;
+            container.style.width = `${1080 * scale}px`;
+            container.style.height = `${1350 * scale}px`;
+        }
+
+        async function exportImage() {
+            const overlay = document.getElementById('loading-overlay');
+            overlay.classList.remove('hidden');
+            try {
+                let exportUnifiedBgSrc = null;
+                if (state.bg.blur) {
+                    exportUnifiedBgSrc = await new Promise((resolve) => {
+                        const img = new Image();
+                        if (!state.bg.src.startsWith('blob:') && !state.bg.src.startsWith('data:')) img.crossOrigin = "anonymous";
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 1080; canvas.height = 1350;
+                            const ctx = canvas.getContext('2d');
+                            ctx.filter = 'blur(10px) brightness(0.6)';
+                            const imgRatio = img.width / img.height;
+                            const canvasRatio = canvas.width / canvas.height;
+                            let bgDrawW = canvas.width; let bgDrawH = canvas.height;
+                            if (imgRatio > canvasRatio) bgDrawW = canvas.height * imgRatio; else bgDrawH = canvas.width / imgRatio;
+                            const bleed = 80; bgDrawW += bleed * 2; bgDrawH += bleed * 2;
+                            ctx.drawImage(img, (canvas.width - bgDrawW) / 2, (canvas.height - bgDrawH) / 2, bgDrawW, bgDrawH);
+                            ctx.filter = 'none';
+                            let fgW = img.width; let fgH = img.height;
+                            if (fgW > 1080) { fgH = fgH * (1080 / fgW); fgW = 1080; }
+                            if (fgH > 1250) { fgW = fgW * (1250 / fgH); fgH = 1250; }
+                            const scale = parseFloat(state.bg.scale);
+                            ctx.save();
+                            ctx.translate((1080 / 2) + parseFloat(state.bg.x), 100 + (fgH / 2) + parseFloat(state.bg.y));
+                            ctx.scale(scale, scale);
+                            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'; ctx.shadowBlur = 60;
+                            ctx.drawImage(img, -fgW / 2, -fgH / 2, fgW, fgH);
+                            ctx.restore();
+                            resolve(canvas.toDataURL('image/jpeg', 0.9));
+                        };
+                        img.src = state.bg.src;
+                    });
+                }
+                const exportContainer = document.createElement('div');
+                exportContainer.style.position = 'fixed'; exportContainer.style.left = '-9999px'; exportContainer.style.top = '0';
+                exportContainer.style.width = '1080px'; exportContainer.style.height = '1350px';
+                exportContainer.innerHTML = generateArtworkHTML(true, exportUnifiedBgSrc);
+                
+                const highlightBoxes = exportContainer.querySelectorAll('.highlight-box-export-fix');
+                highlightBoxes.forEach((box, index) => {
+                    let parentTop = -15; // Default
+                    if (index === 0) {
+                        parentTop = -25; // Up 10
+                    } else if (index === 1) {
+                        parentTop = -15; // Reset
+                    } else if (index === 2) {
+                        parentTop = -5;  // Down 10
+                    }
+                    
+                    box.parentElement.style.position = 'relative'; 
+                    box.parentElement.style.top = parentTop + 'px';
+
+                    if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                        let bTop = 50; 
+                        let tTop = -50;
+                        if (index === 1) { 
+                            bTop = 45; 
+                            tTop = -50; 
+                        } else if (index === 2) { 
+                            bTop = 40; 
+                            tTop = -40; 
+                        }
+                        box.style.position = 'relative'; 
+                        box.style.top = bTop + 'px';
+                        const textSpan = box.querySelector('span');
+                        if (textSpan) { 
+                            textSpan.style.position = 'relative'; 
+                            textSpan.style.top = tTop + 'px'; 
+                        }
+                    }
+                });
+
+                const exportDateContainer = exportContainer.querySelector('#date-container-export');
+                const exportDateSpan = exportContainer.querySelector('#date-text-export-span');
+                if (exportDateContainer && exportDateSpan) {
+                    exportDateContainer.style.marginTop = '0px'; 
+                    exportDateContainer.style.position = 'relative';
+                    exportDateContainer.style.top = '15px'; 
+                    exportDateSpan.style.fontWeight = '600';
+                    exportDateSpan.style.fontSize = '34px';
+                }
+
+                const exportHeadlinesWrapper = exportContainer.querySelector('#headlines-export-wrapper');
+                if (exportHeadlinesWrapper) {
+                    exportHeadlinesWrapper.style.bottom = '315px'; 
+                }
+
+                document.body.appendChild(exportContainer);
+                await new Promise(r => setTimeout(r, 1000));
+                const canvas = await html2canvas(exportContainer.firstElementChild, { scale: 1, useCORS: true, allowTaint: true, backgroundColor: '#000000', width: 1080, height: 1350 });
+                document.body.removeChild(exportContainer);
+                const link = document.createElement('a');
+                link.download = `CM108_NewsCoverV2_${Date.now()}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 1.0); link.click();
+            } catch (err) { console.error(err); } finally { overlay.classList.add('hidden'); }
+        }
+
+        window.onload = () => {
+            renderControls(); renderAll(); handleResize();
+            window.addEventListener('resize', handleResize);
+            document.getElementById('bg-upload').addEventListener('change', function(e) { if (e.target.files && e.target.files[0]) { saveToHistory(); state.bg.src = URL.createObjectURL(e.target.files[0]); renderAll(); } });
+            document.getElementById('frame-upload').addEventListener('change', function(e) { if (e.target.files && e.target.files[0]) { saveToHistory(); state.frame.src = URL.createObjectURL(e.target.files[0]); renderAll(); } });
+            document.getElementById('bg-blur-toggle').addEventListener('change', function(e) { saveToHistory(); state.bg.blur = e.target.checked; renderAll(); });
+            ['bg-scale', 'bg-x', 'bg-y', 'text-y', 'text-y-num', 'line-gap'].forEach(id => {
+                const el = document.getElementById(id);
+                el.oninput = (e) => {
+                    let val = e.target.value;
+                    if (id === 'bg-scale') state.bg.scale = val;
+                    else if (id === 'bg-x') state.bg.x = val;
+                    else if (id === 'bg-y') state.bg.y = val;
+                    else if (id === 'text-y' || id === 'text-y-num') { state.textPos.y = val; document.getElementById('text-y').value = val; document.getElementById('text-y-num').value = val; }
+                    else if (id === 'line-gap') state.gap = val;
+                    renderAll();
+                };
+                el.onchange = () => saveToHistory();
+            });
+            document.getElementById('date-text').oninput = (e) => { state.date.text = e.target.value; renderAll(); };
+            document.getElementById('date-text').onchange = () => saveToHistory();
+            window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } });
+            
+            document.getElementById('date-text').value = state.date.text;
+        };
+    </script>
+</body>
+</html>
