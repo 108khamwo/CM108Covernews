@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>News Cover Generator - CM108</title>
+    <title>ระบบทำปกข่าว CM108 - Dashboard</title>
     
     <!-- Google Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,770 +16,89 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        prompt: ['Prompt', 'sans-serif'],
-                    },
-                    colors: {
-                        newsBlue: '#00c0fa',
-                        newsDark: '#0f172a'
-                    }
+                    fontFamily: { prompt: ['Prompt', 'sans-serif'] },
+                    colors: { newsBlue: '#00c0fa', newsDark: '#0f172a' }
                 }
             }
         }
     </script>
-
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .text-shadow-heavy {
-            text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.9), 0px 2px 5px rgba(0,0,0,0.8);
-        }
-        .footer-shadow {
-            text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.7);
-        }
-
-        .canvas-bg {
-            background-color: #f1f5f9;
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-
-        /* Custom Slider Styles */
-        input[type=range] {
-            -webkit-appearance: none;
-            background: transparent;
-            cursor: pointer;
-            height: 36px;
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 4px;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: #00c0fa;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            margin-top: -8px;
-        }
-
-        input[type=number]::-webkit-inner-spin-button { display: none; }
-
-        body {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Mobile Typing Zen Mode (Auto-shrink preview) */
-        @media (max-width: 1023px) {
-            #preview-wrapper {
-                transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            body.typing-mode #preview-wrapper {
-                height: 18vh !important;
-                min-height: 120px !important;
-            }
-        }
-    </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-prompt h-[100dvh] flex flex-col overflow-hidden">
+<body class="bg-slate-50 font-prompt min-h-screen text-slate-800 flex flex-col items-center py-10 px-4 relative">
 
-    <!-- Header (Fixed at top) -->
-    <header class="flex-none bg-white border-b border-slate-200 px-4 py-2.5 flex justify-between items-center shadow-sm z-50">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-newsBlue flex items-center justify-center rounded-lg shadow-md shadow-blue-500/20">
-                <i class="ph-bold ph-layout text-white text-base"></i>
+    <!-- Background Decoration -->
+    <div class="fixed inset-0 z-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(#00c0fa 1px, transparent 1px); background-size: 30px 30px;"></div>
+
+    <div class="max-w-4xl mx-auto w-full z-10 space-y-8 animate-fade-in-up mt-4 lg:mt-10">
+        <!-- Header -->
+        <div class="text-center space-y-3">
+            <div class="w-20 h-20 bg-white rounded-2xl shadow-xl shadow-blue-500/10 flex items-center justify-center mx-auto mb-4 border border-slate-200">
+                <i class="ph-fill ph-layout text-4xl text-newsBlue"></i>
             </div>
-            <h1 class="text-[15px] font-bold uppercase tracking-tight">News Cover</h1>
+            <h1 class="text-3xl lg:text-4xl font-black text-newsDark tracking-tight">CM108 News Cover <span class="text-newsBlue">Dashboard</span></h1>
+            <p class="text-slate-500 font-medium text-sm lg:text-base">เลือกระบบและเวอร์ชันที่คุณต้องการใช้งาน</p>
         </div>
-        
-        <div class="flex items-center gap-2">
-            <button id="undo-btn" onclick="undo()" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-400 disabled:opacity-30 transition" title="ย้อนกลับ">
-                <i class="ph-bold ph-arrow-u-up-left text-lg"></i>
-            </button>
-            <button onclick="exportImage()" class="bg-newsDark hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 transition active:scale-95 shadow-md">
-                <i class="ph-bold ph-download-simple text-base"></i>
-                <span>บันทึกรูป</span>
-            </button>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+            <!-- Original Section -->
+            <div class="bg-white rounded-3xl p-6 lg:p-8 border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-200 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+                        <i class="ph-bold ph-clock-counter-clockwise text-2xl text-slate-500"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">ระบบ Original (คลาสสิค)</h2>
+                        <p class="text-sm text-slate-500">รูปแบบดั้งเดิม ข่าวทั่วไป</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- ลิงก์ไปยังไฟล์ 1.1 -->
+                    <a href="1.1 Original Desktop.html" class="group block bg-slate-50 hover:bg-blue-50 p-5 rounded-2xl border border-slate-200 hover:border-newsBlue transition text-center shadow-sm">
+                        <i class="ph-bold ph-desktop text-4xl text-slate-400 group-hover:text-newsBlue mb-3 block transition transform group-hover:scale-110"></i>
+                        <span class="font-bold text-sm text-slate-700 group-hover:text-newsBlue transition">เวอร์ชัน Desktop</span>
+                    </a>
+                    <!-- ลิงก์ไปยังไฟล์ 1.2 -->
+                    <a href="1.2 Original Mobile..html" class="group block bg-slate-50 hover:bg-blue-50 p-5 rounded-2xl border border-slate-200 hover:border-newsBlue transition text-center shadow-sm">
+                        <i class="ph-bold ph-device-mobile text-4xl text-slate-400 group-hover:text-newsBlue mb-3 block transition transform group-hover:scale-110"></i>
+                        <span class="font-bold text-sm text-slate-700 group-hover:text-newsBlue transition">เวอร์ชัน Mobile</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- New Gen Section -->
+            <div class="bg-gradient-to-br from-newsDark to-slate-800 rounded-3xl p-6 lg:p-8 shadow-md hover:shadow-2xl hover:shadow-newsDark/30 transition-all">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                        <i class="ph-bold ph-star text-2xl text-newsBlue"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">ระบบ NEW GEN</h2>
+                        <p class="text-sm text-slate-300">ดีไซน์ทันสมัย มีโลโก้และแถบล่าง</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- ลิงก์ไปยังไฟล์ 2.1 -->
+                    <a href="2.1 NEW GEN Desktop.html" class="group block bg-white/5 hover:bg-newsBlue/20 p-5 rounded-2xl border border-white/10 hover:border-newsBlue transition text-center shadow-sm">
+                        <i class="ph-bold ph-desktop text-4xl text-slate-300 group-hover:text-white mb-3 block transition transform group-hover:scale-110"></i>
+                        <span class="font-bold text-sm text-slate-200 group-hover:text-white transition">เวอร์ชัน Desktop</span>
+                    </a>
+                    <!-- ลิงก์ไปยังไฟล์ 2.2 -->
+                    <a href="2.2 NEW GEN Mobile.html" class="group block bg-white/5 hover:bg-newsBlue/20 p-5 rounded-2xl border border-white/10 hover:border-newsBlue transition text-center shadow-sm">
+                        <i class="ph-bold ph-device-mobile text-4xl text-slate-300 group-hover:text-white mb-3 block transition transform group-hover:scale-110"></i>
+                        <span class="font-bold text-sm text-slate-200 group-hover:text-white transition">เวอร์ชัน Mobile</span>
+                    </a>
+                </div>
+            </div>
         </div>
-    </header>
 
-    <!-- Main App Area -->
-    <main class="flex-grow flex flex-col lg:flex-row-reverse min-h-0 relative">
-        
-        <!-- Preview Area (Dynamic Height on Mobile) -->
-        <section id="preview-wrapper" class="flex-none h-[42vh] lg:h-full lg:flex-grow canvas-bg relative p-2 lg:p-6 flex justify-center items-center overflow-hidden z-20 border-b border-slate-200 lg:border-b-0 lg:border-l shadow-sm">
-            
-            <div id="scale-container" class="shadow-xl lg:shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-black relative transition-transform duration-300">
-                <div id="capture-area" style="width: 1080px; height: 1350px; transform-origin: top left;"></div>
-            </div>
+        <!-- Download Blank Frame Button -->
+        <div class="pt-8 flex justify-center border-t border-slate-200/60 pb-10">
+            <a href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOOtphYnEgsG_Q_5Ht_nM8h4hBJkTlJ0HvXwVOlixbfIkYC4y4NTIxcfl58PvyUi9Tj9azFCGGRCK3ysLAyX3yzXVHRmfbtsau733we6uQ3DE6csoMtWBMG2TNS2i-8aOtvIKTpzkCIyh3avLpViH74sW5SnwEZCkkToZeB4Q6VO-cxHafdputo5SmSxE/s1200/%E0%B8%81%E0%B8%A3%E0%B8%AD%E0%B8%9A%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2.png" target="_blank" download="CM108_Blank_Frame.png" class="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:text-newsBlue hover:border-newsBlue hover:bg-blue-50 px-8 py-3.5 rounded-2xl font-bold transition-all shadow-sm">
+                <i class="ph-bold ph-download-simple text-xl"></i>
+                ดาวน์โหลดภาพกรอบเปล่า (PNG)
+            </a>
+        </div>
+    </div>
 
-            <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm z-[100] flex flex-col items-center justify-center hidden">
-                <div class="w-12 h-12 lg:w-14 lg:h-14 border-4 border-slate-100 border-t-newsBlue rounded-full animate-spin"></div>
-                <p class="mt-4 font-bold text-slate-700 uppercase tracking-tighter text-sm lg:text-base">กำลังบันทึกภาพ...</p>
-                <p class="text-[10px] lg:text-xs text-slate-400 mt-1">ประมวลผลความละเอียดสูง</p>
-            </div>
-        </section>
-
-        <!-- Controls Area (Scrollable bottom/left) -->
-        <aside class="flex-grow lg:w-[450px] bg-white flex flex-col min-h-0 relative z-10">
-            
-            <!-- Mobile Sticky Tabs -->
-            <div class="flex border-b border-slate-200 bg-slate-50 flex-none sticky top-0 z-30 shadow-sm">
-                <button onclick="switchTab('text')" id="tab-btn-text" class="flex-1 py-3.5 text-[13px] font-bold text-newsBlue border-b-[3px] border-newsBlue bg-white transition-colors flex flex-col items-center gap-1">
-                    <i class="ph-fill ph-text-aa text-[18px]"></i> <span>พาดหัว</span>
-                </button>
-                <button onclick="switchTab('image')" id="tab-btn-image" class="flex-1 py-3.5 text-[13px] font-bold text-slate-400 border-b-[3px] border-transparent hover:bg-slate-100 transition-colors flex flex-col items-center gap-1">
-                    <i class="ph-fill ph-image text-[18px]"></i> <span>รูปภาพ</span>
-                </button>
-                <button onclick="switchTab('settings')" id="tab-btn-settings" class="flex-1 py-3.5 text-[13px] font-bold text-slate-400 border-b-[3px] border-transparent hover:bg-slate-100 transition-colors flex flex-col items-center gap-1">
-                    <i class="ph-fill ph-sliders-horizontal text-[18px]"></i> <span>ตั้งค่า</span>
-                </button>
-            </div>
-
-            <!-- Scrollable Content -->
-            <div id="scrollable-content" class="overflow-y-auto flex-grow p-4 lg:p-5 no-scrollbar bg-slate-50/50 pb-20">
-                
-                <!-- TAB 1: TEXT (พาดหัว) -->
-                <div id="tab-text" class="space-y-4 animate-fade-in">
-                    <div class="flex justify-between items-center mb-1">
-                        <p class="text-xs font-bold text-slate-500">แตะเพื่อพิมพ์ข้อความ</p>
-                        <button type="button" onclick="resetTextGlobal()" class="text-[10px] font-bold text-slate-400 bg-slate-200 hover:bg-red-100 hover:text-red-500 px-2.5 py-1.5 rounded-lg transition">ล้างข้อมูลใหม่</button>
-                    </div>
-                    <div id="lines-container" class="space-y-3"></div>
-                </div>
-
-                <!-- TAB 2: IMAGE (รูปภาพ) -->
-                <div id="tab-image" class="hidden space-y-4 animate-fade-in">
-                    <!-- Big Upload Buttons for Mobile -->
-                    <div class="flex flex-col gap-3">
-                        <button type="button" onclick="document.getElementById('bg-upload').click()" class="w-full bg-blue-50 border border-blue-200 py-4 rounded-2xl text-sm font-bold text-newsBlue hover:bg-blue-100 transition shadow-sm flex items-center justify-center gap-2">
-                            <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                <i class="ph-bold ph-image text-xl"></i>
-                            </div>
-                            เปลี่ยนภาพข่าวหลัก
-                        </button>
-                        
-                        <button type="button" onclick="document.getElementById('logo-upload').click()" class="w-full bg-white border border-slate-200 py-3 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2">
-                            <i class="ph-bold ph-shield-star text-lg"></i> เปลี่ยนโลโก้มุมซ้ายบน
-                        </button>
-                        
-                        <input type="file" id="bg-upload" accept="image/*" class="hidden">
-                        <input type="file" id="logo-upload" accept="image/*" class="hidden">
-                    </div>
-
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-4 mt-2">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-700">เบลอพื้นหลัง</h4>
-                                <p class="text-[10px] text-slate-400 mt-0.5">เปิดเมื่อรูปภาพไม่เต็มกรอบ</p>
-                            </div>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="bg-blur-toggle" class="sr-only peer">
-                                <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-newsBlue transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
-                            </label>
-                        </div>
-                        <div class="pt-1">
-                            <label class="text-[11px] font-bold text-slate-500 block mb-2 flex justify-between">
-                                <span>ซูมภาพ (Scale)</span>
-                                <span id="bg-scale-val" class="text-newsBlue bg-blue-50 px-2 py-0.5 rounded">1.0</span>
-                            </label>
-                            <input type="range" id="bg-scale" min="0.1" max="5" step="0.01" value="1" class="w-full">
-                        </div>
-                        <div class="flex justify-center pt-2">
-                            <button type="button" onclick="resetBG()" class="text-xs font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-xl transition w-full">รีเซ็ตขนาดภาพและตำแหน่ง</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TAB 3: SETTINGS (ตั้งค่าเพิ่มเติม) -->
-                <div id="tab-settings" class="hidden space-y-5 animate-fade-in">
-                    
-                    <!-- Advanced Layout -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="ph-fill ph-arrows-out-cardinal text-newsBlue text-lg"></i> ขยับตำแหน่งภาพ / โลโก้</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 block mb-1">เลื่อนซ้าย-ขวา (แกน X)</label>
-                                <input type="range" id="bg-x" min="-1500" max="1500" step="1" value="0" class="w-full">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 block mb-1">เลื่อนบน-ล่าง (แกน Y)</label>
-                                <input type="range" id="bg-y" min="-1500" max="1500" step="1" value="0" class="w-full">
-                            </div>
-                            <div class="pt-3 border-t border-slate-100">
-                                <label class="text-[10px] font-bold text-slate-500 block mb-1">ขนาดโลโก้มุมซ้ายบน</label>
-                                <input type="range" id="logo-size" min="50" max="500" value="130" class="w-full">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Advanced Text Settings -->
-                    <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm">
-                        <h3 class="text-xs font-bold text-blue-800 mb-4 flex items-center gap-2"><i class="ph-fill ph-text-b text-newsBlue text-lg"></i> ตำแหน่งพาดหัว (ขยับทั้งกลุ่ม)</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <div class="flex justify-between mb-1">
-                                    <label class="text-[10px] font-bold text-blue-600">เลื่อนขึ้น-ลง</label>
-                                    <input type="number" id="text-y-num" value="0" class="text-[10px] font-bold text-blue-600 bg-white border border-blue-200 rounded px-1 text-right outline-none w-12 py-0.5">
-                                </div>
-                                <input type="range" id="text-y" min="-600" max="600" step="1" value="0" class="w-full accent-blue-500">
-                            </div>
-                            
-                            <div class="flex items-center justify-between border-t border-blue-200/50 pt-3">
-                                <label class="text-[11px] font-bold text-blue-600">ระยะห่างระหว่างบรรทัด (Gap)</label>
-                                <input type="number" id="line-gap" value="8" class="w-14 bg-white text-center text-sm font-bold outline-none text-newsBlue border border-blue-200 rounded-lg py-1 shadow-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Footer / Date -->
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
-                                <i class="ph-fill ph-calendar-blank text-newsBlue text-lg"></i> แถบส่วนท้ายและวันที่
-                            </h3>
-                            <button type="button" onclick="resetFooter()" class="text-[10px] font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded transition">รีเซ็ต</button>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 mb-1.5 block">วันที่ (แสดงเหนือแถบสีฟ้า)</label>
-                                <input type="text" id="date-text" value="- 27 กุมภาพันธ์ 2569 -" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-newsBlue outline-none font-medium text-center transition">
-                            </div>
-                            <div class="h-px bg-slate-100"></div>
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="text-[10px] font-bold text-slate-500">เปิด/ปิด แถบสีฟ้าด้านล่างสุด</label>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" id="footer-toggle" checked class="sr-only peer">
-                                        <div class="w-9 h-5 bg-slate-200 rounded-full peer peer-checked:bg-newsBlue transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-                                    </label>
-                                </div>
-                                <input type="text" id="footer-text" value="เชียงใหม่ CM108 ข่าวเชียงใหม่ จังหวัดเชียงใหม่" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-newsBlue outline-none font-medium text-center transition">
-                            </div>
-                        </div>
-                    </div>
-
-                </div> <!-- End Tab 3 -->
-            </div>
-        </aside>
-    </main>
-
-    <script>
-        // --- App State ---
-        let state = {
-            lines: [
-                { text: '"ฮุน มาเนต" ปฏิเสธ', color: '#ffffff', bgColor: '#00c0fa', size: 100, align: 'center', shadow: true, yOffset: 0, showAdv: false },
-                { text: 'รัฐได้ผลประโยชน์ธุรกิจสีเทา', color: '#ffffff', bgColor: 'transparent', size: 75, align: 'center', shadow: true, yOffset: 0, showAdv: false },
-                { text: 'ไม่รู้ "เฉิน จื้อ" เป็นสแกมเมอร์', color: '#ffffff', bgColor: 'transparent', size: 75, align: 'center', shadow: true, yOffset: 0, showAdv: false }
-            ],
-            bg: { src: 'https://images.unsplash.com/photo-1555848962-6e79363ec58f?q=80&w=1080&auto=format&fit=crop', scale: 1, x: 0, y: 0, blur: false },
-            logo: { src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IndoaXRlIiByeD0iMjAiLz48dGV4dCB4PSI1MCIgeT0iNjUiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjQwIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iIzAwYzBmYSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+TE9HTzwvdGV4dD48L3N2Zz4=' },
-            textPos: { y: 0 },
-            gap: 8,
-            logoSize: 130,
-            date: { text: '- 27 กุมภาพันธ์ 2569 -' },
-            footer: { active: true, text: 'เชียงใหม่ CM108 ข่าวเชียงใหม่ จังหวัดเชียงใหม่' }
-        };
-
-        let historyStack = [];
-        const defaultColors = [
-            { name: 'ฟ้า', hex: '#00c0fa' }, { name: 'ฟ้าอ่อน', hex: '#4bfafc' },
-            { name: 'ขาว', hex: '#ffffff' }, { name: 'เหลือง', hex: '#ffd700' }, { name: 'ดำ', hex: '#000000' }
-        ];
-
-        // --- Zen Typing Mode (Auto-shrink preview on mobile) ---
-        let resizeTimeout;
-        function handleInputFocus(idx) {
-            document.body.classList.add('typing-mode');
-            
-            // Scroll to the active input to ensure it's visible
-            setTimeout(() => {
-                const el = document.getElementById(`line-card-${idx}`);
-                if(el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-                handleResize(); // trigger scale recalculation
-            }, 350); // wait for css transition
-        }
-
-        function handleInputBlur() {
-            // Give a small delay to check if they just tapped another text box
-            setTimeout(() => {
-                const activeEl = document.activeElement;
-                if (!activeEl || activeEl.tagName !== 'TEXTAREA') {
-                    document.body.classList.remove('typing-mode');
-                    setTimeout(handleResize, 350);
-                }
-            }, 100);
-        }
-
-        // --- Tab Control ---
-        function switchTab(tabId) {
-            ['text', 'image', 'settings'].forEach(id => {
-                document.getElementById(`tab-${id}`).classList.add('hidden');
-                
-                const btn = document.getElementById(`tab-btn-${id}`);
-                const icon = btn.querySelector('i');
-                
-                btn.classList.remove('text-newsBlue', 'border-newsBlue', 'bg-white');
-                btn.classList.add('text-slate-400', 'border-transparent');
-                
-                if(id === tabId) {
-                    document.getElementById(`tab-${id}`).classList.remove('hidden');
-                    btn.classList.remove('text-slate-400', 'border-transparent');
-                    btn.classList.add('text-newsBlue', 'border-newsBlue', 'bg-white');
-                }
-            });
-            // Scroll to top of controls when switching tab
-            document.getElementById('scrollable-content').scrollTop = 0;
-        }
-
-        // --- History ---
-        function saveToHistory() {
-            historyStack.push(JSON.parse(JSON.stringify(state)));
-            if (historyStack.length > 30) historyStack.shift();
-            updateUndoButton();
-        }
-
-        function undo() {
-            if (historyStack.length === 0) return;
-            state = historyStack.pop();
-            renderAll();
-            syncInputs();
-            renderControls(); 
-            updateUndoButton();
-        }
-
-        function updateUndoButton() {
-            const btn = document.getElementById('undo-btn');
-            if (btn) btn.disabled = historyStack.length === 0;
-        }
-
-        // --- Update Data ---
-        function updateLine(idx, key, val) {
-            const isTextOrAdvToggle = key === 'text' || key === 'showAdv';
-            const isSlider = key === 'size' || key === 'yOffset';
-            
-            if (!isSlider && !isTextOrAdvToggle) saveToHistory();
-            
-            state.lines[idx][key] = val;
-            
-            // Sync slider numbers without re-rendering controls
-            if (key === 'size' || key === 'yOffset') {
-                const rangeInput = document.getElementById(`range-${key}-${idx}`);
-                const numInput = document.getElementById(`num-${key}-${idx}`);
-                if (rangeInput) rangeInput.value = val;
-                if (numInput) numInput.value = val;
-            }
-            
-            if (key !== 'showAdv') renderAll();
-            
-            // Re-render controls ONLY for styling changes, NOT when typing text
-            if (!isSlider && key !== 'text') {
-                renderControls(); 
-            }
-        }
-
-        function toggleAdvancedText(idx) {
-            updateLine(idx, 'showAdv', !state.lines[idx].showAdv);
-            
-            // Auto scroll to make options visible
-            if(state.lines[idx].showAdv) {
-                setTimeout(() => {
-                    document.getElementById(`line-card-${idx}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 50);
-            }
-        }
-
-        function resetBG() {
-            saveToHistory();
-            state.bg.scale = 1; state.bg.x = 0; state.bg.y = 0; state.bg.blur = false;
-            syncInputs(); renderAll();
-        }
-
-        function resetTextGlobal() {
-            saveToHistory();
-            const defConfigs = [
-                { color: '#ffffff', bgColor: '#00c0fa', size: 100, align: 'center', shadow: true, yOffset: 0, showAdv: false },
-                { color: '#ffffff', bgColor: 'transparent', size: 75, align: 'center', shadow: true, yOffset: 0, showAdv: false },
-                { color: '#ffffff', bgColor: 'transparent', size: 75, align: 'center', shadow: true, yOffset: 0, showAdv: false }
-            ];
-            state.lines = state.lines.map((line, idx) => ({ ...defConfigs[idx], text: line.text, showAdv: false }));
-            state.textPos.y = 0;
-            state.gap = 8;
-            syncInputs();
-            renderAll();
-            renderControls();
-        }
-
-        function resetFooter() {
-            saveToHistory();
-            state.footer = { active: true, text: 'เชียงใหม่ CM108 ข่าวเชียงใหม่ จังหวัดเชียงใหม่' };
-            state.date = { text: '- 27 กุมภาพันธ์ 2569 -' };
-            syncInputs();
-            renderAll();
-        }
-
-        // --- Rendering ---
-        function generateArtworkHTML(isExport = false, exportUnifiedBgSrc = null) {
-            let linesHTML = '';
-            
-            state.lines.forEach(line => {
-                if (!line.text.trim()) return;
-                
-                const padding = line.bgColor !== 'transparent' ? 'padding: 10px 30px 4px 30px;' : 'padding: 0;';
-                const radius = line.bgColor !== 'transparent' ? 'border-radius: 16px;' : '';
-                const shadow = line.shadow ? 'text-shadow-heavy' : '';
-
-                let justify = 'flex-start';
-                if (line.align === 'center') justify = 'center';
-                if (line.align === 'right') justify = 'flex-end';
-
-                linesHTML += `
-                    <div style="display: flex; justify-content: ${justify}; width: 100%; transform: translateY(${line.yOffset}px);">
-                        <div class="highlight-box-export-fix" style="background-color: ${line.bgColor}; ${radius} ${padding} box-sizing: border-box;">
-                            <span class="${shadow}" style="color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${line.align};">${line.text}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            const footerHTML = state.footer.active ? `
-                <div id="footer-bar-export" style="position: absolute; bottom: 0; left: 0; width: 1080px; height: 40px; background-color: #00c0fa; z-index: 30; display: flex; align-items: center; justify-content: center;">
-                    <span id="footer-text-export" class="footer-shadow" style="color: white; font-weight: 400; font-size: 20px; letter-spacing: 0.05em; padding-bottom: 2px;">
-                        ${state.footer.text}
-                    </span>
-                </div>
-            ` : '';
-
-            const dateHTML = `
-                <div id="date-row-export" style="position: absolute; bottom: 52px; left: 0; width: 1080px; display: flex; justify-content: center; z-index: 25;">
-                    <span style="color: white; font-size: 29px; font-weight: 300; text-shadow: 0px 2px 5px rgba(0,0,0,0.8);">${state.date.text}</span>
-                </div>
-            `;
-
-            const blurValPreview = 15; 
-            let blurLayerHTML = '';
-            let fgContainerHTML = '';
-
-            if (state.bg.blur) {
-                if (isExport && exportUnifiedBgSrc) {
-                    blurLayerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 1; background-color: #000;"><img src="${exportUnifiedBgSrc}" style="width: 100%; height: 100%; object-fit: cover; display: block;"></div>`;
-                    fgContainerHTML = ``;
-                } else {
-                    blurLayerHTML = `<div style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; z-index: 1; background-color: #000;"><img src="${state.bg.src}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover; filter: blur(${blurValPreview}px) brightness(0.6); -webkit-filter: blur(${blurValPreview}px) brightness(0.6);"></div>`;
-                    let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); box-shadow: 0 0 60px rgba(0,0,0,0.65); border: none !important; outline: none !important;`;
-                    let fgContainerStyle = `position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;`;
-                    fgContainerHTML = `<div style="${fgContainerStyle}"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin="anonymous"></div>`;
-                }
-            } else {
-                let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); border: none !important; outline: none !important;`;
-                let fgContainerStyle = `position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;`;
-                fgContainerHTML = `<div style="${fgContainerStyle}"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin="anonymous"></div>`;
-            }
-
-            return `
-                <div style="width: 1080px; height: 1350px; position: relative; overflow: hidden; background-color: #000; box-sizing: border-box;">
-                    ${blurLayerHTML}
-                    ${fgContainerHTML}
-                    <div style="position: absolute; bottom: -4px; left: -4px; right: -4px; height: 860px; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.85) 45%, transparent 100%); z-index: 10; pointer-events: none;"></div>
-                    <img src="${state.logo.src}" style="position: absolute; top: 40px; left: 40px; width: ${state.logoSize}px; object-fit: contain; z-index: 20;" crossorigin="anonymous">
-                    <div id="headlines-export-wrapper" style="position: absolute; bottom: 105px; left: 70px; width: 940px; display: flex; flex-direction: column; justify-content: flex-end; z-index: 20;">
-                        <div style="display: flex; flex-direction: column; width: 100%; gap: ${parseInt(state.gap) + 20}px; transform: translateY(${state.textPos.y}px);">
-                            ${linesHTML}
-                        </div>
-                    </div>
-                    ${dateHTML}
-                    ${footerHTML}
-                </div>
-            `;
-        }
-
-        function renderAll() {
-            const area = document.getElementById('capture-area');
-            if (area) {
-                area.innerHTML = generateArtworkHTML(false, null);
-                const highlights = area.querySelectorAll('.highlight-box-export-fix');
-                highlights.forEach((box, index) => {
-                    if (index === 0 || index === 1) {
-                        let offset = 5;
-                        box.style.position = 'relative';
-                        box.style.top = `${offset}px`;
-                        const textSpan = box.querySelector('span');
-                        if (textSpan) {
-                            textSpan.style.position = 'relative';
-                            textSpan.style.top = `${-offset}px`;
-                        }
-                    }
-                });
-            }
-            const scaleLbl = document.getElementById('bg-scale-val');
-            const posNum = document.getElementById('text-y-num');
-            if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
-            if (posNum) posNum.value = state.textPos.y;
-        }
-
-        function renderControls() {
-            const container = document.getElementById('lines-container');
-            container.innerHTML = '';
-            
-            // Define colors for indicators (blue, amber, emerald)
-            const indicatorColors = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500'];
-            
-            state.lines.forEach((line, idx) => {
-                const card = document.createElement('div');
-                card.id = `line-card-${idx}`;
-                card.className = "bg-white rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.04)] border border-slate-200 transition-all relative flex flex-col";
-                
-                // Focus styling class helper (text-base is 16px to prevent iOS auto-zoom)
-                const textareaClass = "w-full pl-3 pr-2 py-3 bg-transparent text-slate-800 text-base font-bold focus:bg-slate-50 outline-none transition-all resize-none font-prompt leading-tight border-0";
-                
-                card.innerHTML = `
-                    <div class="absolute left-0 top-0 bottom-0 w-1.5 ${indicatorColors[idx] || 'bg-slate-300'}"></div>
-                    
-                    <div class="pl-2 relative flex flex-col">
-                        <div class="flex items-start">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase pt-4 pl-1 flex-none w-6 text-center">${idx+1}</span>
-                            <div class="flex-grow">
-                                <textarea oninput="updateLine(${idx}, 'text', this.value)" 
-                                          onfocus="handleInputFocus(${idx})" 
-                                          onblur="handleInputBlur()"
-                                          class="${textareaClass}" rows="1" placeholder="พิมพ์ข้อความ...">${line.text}</textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center px-3 py-2 border-t border-slate-100 bg-slate-50/50">
-                            <button onclick="toggleAdvancedText(${idx})" class="text-[11px] font-bold ${line.showAdv ? 'text-newsBlue bg-blue-50' : 'text-slate-500 hover:bg-slate-100'} flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all border border-transparent ${line.showAdv ? 'border-blue-100' : ''}">
-                                <i class="ph-bold ${line.showAdv ? 'ph-caret-up' : 'ph-palette'} text-[14px]"></i> สี / ขนาด
-                            </button>
-                            <div class="flex gap-1">
-                                <button onclick="updateLine(${idx}, 'align', 'left')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'left' ? 'bg-newsBlue text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-200'} transition"><i class="ph-bold ph-text-align-left text-sm"></i></button>
-                                <button onclick="updateLine(${idx}, 'align', 'center')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'center' ? 'bg-newsBlue text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-200'} transition"><i class="ph-bold ph-text-align-center text-sm"></i></button>
-                                <button onclick="updateLine(${idx}, 'align', 'right')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'right' ? 'bg-newsBlue text-white shadow-sm' : 'bg-white text-slate-400 border border-slate-200'} transition"><i class="ph-bold ph-text-align-right text-sm"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Advanced Settings (Accordion) -->
-                    <div class="${line.showAdv ? 'block' : 'hidden'} bg-white border-t border-slate-100 p-4 space-y-4">
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-[10px] font-bold text-slate-500 uppercase">ขนาดตัวอักษร</label>
-                                <span class="text-xs font-bold text-newsBlue bg-blue-50 px-2 py-0.5 rounded">${line.size}</span>
-                            </div>
-                            <input type="range" id="range-size-${idx}" min="30" max="250" value="${line.size}" oninput="updateLine(${idx}, 'size', parseInt(this.value))" class="w-full">
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 block mb-2">สีอักษร</label>
-                                <div class="flex gap-1.5 flex-wrap">
-                                    ${defaultColors.map(c => `<button onclick="updateLine(${idx}, 'color', '${c.hex}')" class="w-6 h-6 rounded-full border border-slate-300 shadow-sm transition" style="background-color: ${c.hex}; ${line.color === c.hex ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>`).join('')}
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 block mb-2">แถบสีไฮไลท์</label>
-                                <div class="flex gap-1.5 items-center flex-wrap">
-                                    <button onclick="updateLine(${idx}, 'bgColor', 'transparent')" class="text-[10px] font-bold w-6 h-6 flex items-center justify-center border border-slate-300 rounded-full bg-white hover:bg-slate-100 text-slate-500">X</button>
-                                    <button onclick="updateLine(${idx}, 'bgColor', '#000000')" class="w-6 h-6 rounded-full bg-black border border-slate-300 shadow-sm" style="${line.bgColor === '#000000' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
-                                    <button onclick="updateLine(${idx}, 'bgColor', '#00c0fa')" class="w-6 h-6 rounded-full bg-newsBlue border border-slate-300 shadow-sm" style="${line.bgColor === '#00c0fa' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="pt-1">
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="text-[10px] font-bold text-slate-500">ขยับขึ้น/ลง (เฉพาะบรรทัดนี้)</label>
-                                <input type="number" id="num-yOffset-${idx}" value="${line.yOffset}" class="w-12 text-xs bg-emerald-50 text-emerald-600 rounded text-center font-bold outline-none py-0.5" readonly>
-                            </div>
-                            <input type="range" id="range-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value))" class="w-full accent-emerald-500">
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function syncInputs() {
-            const ids = ['bg-scale', 'bg-x', 'bg-y', 'bg-blur-toggle', 'text-y', 'text-y-num', 'logo-size', 'line-gap', 'footer-toggle', 'footer-text', 'date-text'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                if (id === 'footer-toggle') el.checked = state.footer.active;
-                else if (id === 'bg-blur-toggle') el.checked = state.bg.blur;
-                else if (id === 'footer-text') el.value = state.footer.text;
-                else if (id === 'date-text') el.value = state.date.text;
-                else if (id === 'bg-scale') el.value = state.bg.scale;
-                else if (id === 'bg-x') el.value = state.bg.x;
-                else if (id === 'bg-y') el.value = state.bg.y;
-                else if (id === 'text-y' || id === 'text-y-num') el.value = state.textPos.y;
-                else if (id === 'logo-size') el.value = state.logoSize;
-                else if (id === 'line-gap') el.value = state.gap;
-            });
-        }
-
-        function handleResize() {
-            const wrapper = document.getElementById('preview-wrapper');
-            const container = document.getElementById('scale-container');
-            const artwork = document.getElementById('capture-area');
-            if (!wrapper || !container || !artwork) return;
-            
-            // Dynamic padding based on device/state
-            let padding = window.innerWidth < 1024 ? 16 : 40;
-            if (document.body.classList.contains('typing-mode')) padding = 8;
-
-            const w = wrapper.clientWidth - padding;
-            const h = wrapper.clientHeight - padding;
-            
-            const scale = Math.min(w / 1080, h / 1350, 1);
-            artwork.style.transform = `scale(${scale})`;
-            artwork.style.transformOrigin = `top left`;
-            container.style.width = `${1080 * scale}px`;
-            container.style.height = `${1350 * scale}px`;
-        }
-
-        async function exportImage() {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.classList.remove('hidden');
-
-            try {
-                let exportUnifiedBgSrc = null;
-                if (state.bg.blur) {
-                    exportUnifiedBgSrc = await new Promise((resolve) => {
-                        const img = new Image();
-                        if (!state.bg.src.startsWith('blob:') && !state.bg.src.startsWith('data:')) { img.crossOrigin = "anonymous"; }
-                        img.onload = () => {
-                            try {
-                                const canvas = document.createElement('canvas');
-                                canvas.width = 1080; canvas.height = 1350; 
-                                const ctx = canvas.getContext('2d');
-                                ctx.filter = 'blur(10px) brightness(0.6)';
-                                const imgRatio = img.width / img.height;
-                                const canvasRatio = canvas.width / canvas.height;
-                                let bgDrawW = canvas.width; let bgDrawH = canvas.height;
-                                if (imgRatio > canvasRatio) bgDrawW = canvas.height * imgRatio;
-                                else bgDrawH = canvas.width / imgRatio;
-                                const bleed = 80;
-                                bgDrawW += bleed * 2; bgDrawH += bleed * 2;
-                                ctx.drawImage(img, (canvas.width - bgDrawW) / 2, (canvas.height - bgDrawH) / 2, bgDrawW, bgDrawH);
-                                
-                                ctx.filter = 'none';
-                                let fgW = img.width; let fgH = img.height;
-                                if (fgW > 1080) { fgH = fgH * (1080 / fgW); fgW = 1080; }
-                                if (fgH > 1250) { fgW = fgW * (1250 / fgH); fgH = 1250; }
-                                
-                                ctx.save();
-                                ctx.translate((1080 / 2) + parseFloat(state.bg.x), 100 + (fgH / 2) + parseFloat(state.bg.y));
-                                ctx.scale(parseFloat(state.bg.scale), parseFloat(state.bg.scale));
-                                ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'; ctx.shadowBlur = 60;
-                                ctx.drawImage(img, -fgW / 2, -fgH / 2, fgW, fgH);
-                                ctx.restore();
-                                resolve(canvas.toDataURL('image/jpeg', 0.9));
-                            } catch (e) { resolve(state.bg.src); }
-                        };
-                        img.onerror = () => resolve(state.bg.src); 
-                        img.src = state.bg.src;
-                    });
-                }
-
-                const exportContainer = document.createElement('div');
-                exportContainer.style.position = 'fixed'; exportContainer.style.left = '-9999px'; exportContainer.style.top = '0';
-                exportContainer.style.width = '1080px'; exportContainer.style.height = '1350px';
-                exportContainer.innerHTML = generateArtworkHTML(true, exportUnifiedBgSrc); 
-                
-                const highlightBoxes = exportContainer.querySelectorAll('.highlight-box-export-fix');
-                highlightBoxes.forEach((box, index) => {
-                    if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                        let bTop = 55; let tTop = -55;
-                        if (index === 1) { bTop = 45; tTop = -45; } else if (index === 2) { bTop = 40; tTop = -40; }
-                        box.style.position = 'relative'; box.style.top = bTop + 'px'; 
-                        const textSpan = box.querySelector('span');
-                        if (textSpan) { textSpan.style.position = 'relative'; textSpan.style.top = tTop + 'px'; }
-                        if (index === 0 || index === 1 || index === 2) { box.parentElement.style.position = 'relative'; box.parentElement.style.top = '-15px'; }
-                    }
-                });
-
-                const exportHeadlinesWrapper = exportContainer.querySelector('#headlines-export-wrapper');
-                if (exportHeadlinesWrapper) exportHeadlinesWrapper.style.bottom = '125px'; 
-
-                const exportDateRow = exportContainer.querySelector('#date-row-export');
-                if (exportDateRow) { exportDateRow.style.bottom = '57px'; exportDateRow.querySelector('span').style.lineHeight = '1.5'; }
-
-                const exportFooter = exportContainer.querySelector('#footer-bar-export');
-                if (exportFooter) { exportFooter.style.height = '32px'; exportFooter.querySelector('span').style.fontSize = '19px'; exportFooter.querySelector('span').style.transform = 'translateY(-7px)'; }
-
-                document.body.appendChild(exportContainer);
-                await new Promise(r => setTimeout(r, 800)); // wait for fonts/images
-                
-                const canvas = await html2canvas(exportContainer.firstElementChild, {
-                    scale: 1, useCORS: true, allowTaint: true, backgroundColor: '#000000', width: 1080, height: 1350, logging: false
-                });
-
-                document.body.removeChild(exportContainer);
-                
-                const link = document.createElement('a');
-                link.download = `CM108_NewsCover_${Date.now()}.jpg`;
-                link.href = canvas.toDataURL('image/jpeg', 1.0);
-                link.click();
-            } catch (err) { console.error(err); } finally { overlay.classList.add('hidden'); }
-        }
-
-        window.onload = () => {
-            renderControls();
-            renderAll();
-            handleResize();
-            
-            // Optimization for resize events
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimeout);
-                resizeTimeout = setTimeout(handleResize, 100);
-            });
-            
-            document.getElementById('bg-upload').addEventListener('change', function(e) {
-                if (e.target.files && e.target.files[0]) {
-                    saveToHistory(); state.bg.src = URL.createObjectURL(e.target.files[0]); renderAll();
-                }
-            });
-            document.getElementById('logo-upload').addEventListener('change', function(e) {
-                if (e.target.files && e.target.files[0]) {
-                    saveToHistory(); state.logo.src = URL.createObjectURL(e.target.files[0]); renderAll();
-                }
-            });
-
-            document.getElementById('bg-blur-toggle').addEventListener('change', function(e) { saveToHistory(); state.bg.blur = e.target.checked; renderAll(); });
-
-            ['bg-scale', 'bg-x', 'bg-y', 'text-y', 'text-y-num', 'logo-size', 'line-gap'].forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                el.oninput = (e) => {
-                    let val = e.target.value;
-                    if (id === 'bg-scale') state.bg.scale = val;
-                    else if (id === 'bg-x') state.bg.x = val;
-                    else if (id === 'bg-y') state.bg.y = val;
-                    else if (id === 'text-y' || id === 'text-y-num') { state.textPos.y = val; document.getElementById('text-y').value = val; document.getElementById('text-y-num').value = val; }
-                    else if (id === 'logo-size') state.logoSize = val;
-                    else if (id === 'line-gap') state.gap = val;
-                    renderAll();
-                };
-                el.onchange = () => saveToHistory();
-            });
-
-            document.getElementById('date-text').oninput = (e) => { state.date.text = e.target.value; renderAll(); };
-            document.getElementById('date-text').onchange = () => saveToHistory();
-            document.getElementById('footer-toggle').onchange = (e) => { saveToHistory(); state.footer.active = e.target.checked; renderAll(); };
-            document.getElementById('footer-text').oninput = (e) => { state.footer.text = e.target.value; renderAll(); };
-            document.getElementById('footer-text').onchange = () => saveToHistory();
-            window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } });
-        };
-    </script>
 </body>
 </html>
