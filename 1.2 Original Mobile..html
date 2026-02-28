@@ -48,6 +48,8 @@
             background: transparent;
             cursor: pointer;
             height: 36px;
+            /* ป้องกันการ Scroll หน้าจอขณะดึงสไลด์บนมือถือ ทำให้ไม่กระตุก */
+            touch-action: none; 
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
@@ -504,28 +506,37 @@
             `;
         }
 
+        // --- เพิ่ม Request Animation Frame เพื่อความสมูทของสไลด์ ---
+        let isRendering = false;
         function renderAll() {
-            const area = document.getElementById('capture-area');
-            if (area) {
-                area.innerHTML = generateArtworkHTML(false, null);
-                const highlights = area.querySelectorAll('.highlight-box-export-fix');
-                highlights.forEach((box, index) => {
-                    if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                        let offset = 5;
-                        box.style.position = 'relative';
-                        box.style.top = `${offset}px`;
-                        const textSpan = box.querySelector('span');
-                        if (textSpan) {
-                            textSpan.style.position = 'relative';
-                            textSpan.style.top = `${-offset}px`;
+            if (isRendering) return; // ป้องกันการเรียกซ้อนกันในเฟรมเดียว
+            isRendering = true;
+
+            requestAnimationFrame(() => {
+                const area = document.getElementById('capture-area');
+                if (area) {
+                    area.innerHTML = generateArtworkHTML(false, null);
+                    const highlights = area.querySelectorAll('.highlight-box-export-fix');
+                    highlights.forEach((box, index) => {
+                        if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                            let offset = 5;
+                            box.style.position = 'relative';
+                            box.style.top = `${offset}px`;
+                            const textSpan = box.querySelector('span');
+                            if (textSpan) {
+                                textSpan.style.position = 'relative';
+                                textSpan.style.top = `${-offset}px`;
+                            }
                         }
-                    }
-                });
-            }
-            const scaleLbl = document.getElementById('bg-scale-val');
-            const posNum = document.getElementById('text-y-num');
-            if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
-            if (posNum) posNum.value = state.textPos.y;
+                    });
+                }
+                const scaleLbl = document.getElementById('bg-scale-val');
+                const posNum = document.getElementById('text-y-num');
+                if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
+                if (posNum) posNum.value = state.textPos.y;
+                
+                isRendering = false; // ปลดล็อคเมื่อเรนเดอร์เสร็จ
+            });
         }
 
         function renderControls() {
