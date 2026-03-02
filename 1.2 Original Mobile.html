@@ -29,8 +29,16 @@
         body {
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+            -webkit-text-size-adjust: none; /* Fix for mobile font boosting */
+            text-size-adjust: none;
         }
         
+        /* แก้ปัญหาเบราว์เซอร์มือถือแอบขยายฟอนต์อัตโนมัติ (Font Boosting) ทำให้พรีวิวเพี้ยนเวลาพิมพ์ */
+        #scale-container, #capture-area, #capture-area * {
+            -webkit-text-size-adjust: none !important;
+            text-size-adjust: none !important;
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
