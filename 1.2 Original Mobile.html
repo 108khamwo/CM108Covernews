@@ -370,32 +370,43 @@
                 let justify = line.align === 'center' ? 'center' : (line.align === 'right' ? 'flex-end' : 'flex-start');
                 let textAlign = line.align === 'center' ? 'center' : (line.align === 'right' ? 'right' : 'left');
 
-                let layersHTML = '';
-                let zIdx = 1;
-
-                // Layer 1: เงาซ้อน (Drop Shadow Extrusion) สร้างมิติความลึก
+                // === กลับมาใช้สมการคำนวณเงาและขอบแบบ Original 100% เพื่อให้ความหนาเป๊ะเหมือนเดิม ===
+                let shadowParts = [];
+                
+                if (line.stroke > 0) {
+                    for (let r = 1; r <= line.stroke; r++) {
+                        // ปรับมุมให้ละเอียดขึ้นเล็กน้อย (จาก 15 เป็น 10) เพื่อลดรอยแตก แต่คงความหนาเดิม
+                        for (let a = 0; a < 360; a += 10) {
+                            let rad = a * Math.PI / 180;
+                            shadowParts.push(`${(Math.cos(rad) * r).toFixed(1)}px ${(Math.sin(rad) * r).toFixed(1)}px 0px black`);
+                        }
+                    }
+                }
+                
                 if (line.shadow && line.shadowOffset > 0) {
-                    for (let d = line.shadowOffset; d >= 0.5; d -= 0.5) {
-                        let strokeStyle = line.stroke > 0 ? `-webkit-text-stroke: ${line.stroke * 2}px black;` : '';
-                        layersHTML += `<span style="grid-column: 1; grid-row: 1; color: black; ${strokeStyle} font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; left: ${d}px; top: ${d}px; z-index: ${zIdx++}; width: 100%;">${line.text}</span>`;
+                    for (let d = 0.5; d <= line.shadowOffset; d += 0.5) {
+                        shadowParts.push(`${d}px ${d}px 0px rgba(0,0,0,1)`); 
+                        if (line.stroke > 0) {
+                            for (let r = 1; r <= line.stroke; r++) {
+                                for (let a = 0; a < 360; a += 15) { 
+                                    let rad = a * Math.PI / 180;
+                                    shadowParts.push(`${(Math.cos(rad) * r + d).toFixed(1)}px ${(Math.sin(rad) * r + d).toFixed(1)}px 0px rgba(0,0,0,1)`);
+                                }
+                            }
+                        }
                     }
                 }
 
-                // Layer 2: ขอบดำหลัก (Main Stroke Base) ใช้ Vector Stroke แทนเงา เพื่อความเนียน 100%
-                if (line.stroke > 0) {
-                    layersHTML += `<span style="grid-column: 1; grid-row: 1; color: black; -webkit-text-stroke: ${line.stroke * 2}px black; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; width: 100%;">${line.text}</span>`;
-                }
-
-                // Layer 3: ข้อความสีเนื้อใน (Top Fill Layer)
-                // แก้ปัญหาเส้นดำทะลุ: เลิกใช้ text-stroke ในเลเยอร์บนสุด แล้วใช้ text-shadow เกลี่ยรอยต่อสีแทน
-                let fixAntialias = line.stroke > 0 ? `text-shadow: -1.5px -1.5px 0 ${line.color}, 1.5px -1.5px 0 ${line.color}, -1.5px 1.5px 0 ${line.color}, 1.5px 1.5px 0 ${line.color};` : 'text-shadow: none;';
-                layersHTML += `<span style="grid-column: 1; grid-row: 1; color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; ${fixAntialias} width: 100%;">${line.text}</span>`;
+                const finalShadowStyle = shadowParts.length > 0 ? `text-shadow: ${shadowParts.join(', ')};` : '';
 
                 linesHTML += `
                     <div style="display: flex; justify-content: ${justify}; width: 100%; transform: translateY(${line.yOffset}px);">
                         <div class="highlight-box-export-fix" style="background-color: ${line.bgColor}; ${radius} ${padding} box-sizing: border-box;">
                             <div class="text-layer-wrapper" style="display: grid; width: 100%;">
-                                ${layersHTML}
+                                <!-- Layer 1: เงาและขอบแบบ Original 100% รักษาความหนาเดิมเป๊ะ -->
+                                <span style="grid-column: 1; grid-row: 1; color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: 1; width: 100%; ${finalShadowStyle}">${line.text}</span>
+                                <!-- Layer 2: ข้อความเปล่าทับด้านบน ป้องกันขอบตัวหนังสือซ้อนกันเวลาบันทึกรูป -->
+                                <span style="grid-column: 1; grid-row: 1; color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: 2; text-shadow: none; width: 100%;">${line.text}</span>
                             </div>
                         </div>
                     </div>
