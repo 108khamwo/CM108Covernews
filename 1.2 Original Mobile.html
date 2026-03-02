@@ -366,38 +366,37 @@
                 if (!line.text.trim()) return;
                 const padding = line.bgColor !== 'transparent' ? 'padding: 22px 30px 16px 30px;' : 'padding: 0;';
                 const radius = line.bgColor !== 'transparent' ? 'border-radius: 16px;' : '';
-                let shadowParts = [];
                 
-                if (line.stroke > 0) {
-                    for (let r = 1; r <= line.stroke; r++) {
-                        for (let a = 0; a < 360; a += 15) {
-                            let rad = a * Math.PI / 180;
-                            shadowParts.push(`${(Math.cos(rad) * r).toFixed(1)}px ${(Math.sin(rad) * r).toFixed(1)}px 0px black`);
-                        }
-                    }
-                }
-                
+                let justify = line.align === 'center' ? 'center' : (line.align === 'right' ? 'flex-end' : 'flex-start');
+                let textAlign = line.align === 'center' ? 'center' : (line.align === 'right' ? 'right' : 'left');
+
+                let layersHTML = '';
+                let zIdx = 1;
+
+                // Layer 1: เงาซ้อน (Drop Shadow Extrusion) สร้างมิติความลึก
                 if (line.shadow && line.shadowOffset > 0) {
-                    for (let d = 0.5; d <= line.shadowOffset; d += 0.5) {
-                        shadowParts.push(`${d}px ${d}px 0px rgba(0,0,0,1)`); 
-                        if (line.stroke > 0) {
-                            for (let r = 1; r <= line.stroke; r++) {
-                                for (let a = 0; a < 360; a += 30) { 
-                                    let rad = a * Math.PI / 180;
-                                    shadowParts.push(`${(Math.cos(rad) * r + d).toFixed(1)}px ${(Math.sin(rad) * r + d).toFixed(1)}px 0px rgba(0,0,0,1)`);
-                                }
-                            }
-                        }
+                    for (let d = line.shadowOffset; d >= 0.5; d -= 0.5) {
+                        let strokeStyle = line.stroke > 0 ? `-webkit-text-stroke: ${line.stroke * 2}px black;` : '';
+                        layersHTML += `<span style="grid-column: 1; grid-row: 1; color: black; ${strokeStyle} font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; left: ${d}px; top: ${d}px; z-index: ${zIdx++}; width: 100%;">${line.text}</span>`;
                     }
                 }
 
-                const finalShadowStyle = shadowParts.length > 0 ? `text-shadow: ${shadowParts.join(', ')};` : '';
-                let justify = line.align === 'center' ? 'center' : (line.align === 'right' ? 'flex-end' : 'flex-start');
+                // Layer 2: ขอบดำหลัก (Main Stroke Base) ใช้ Vector Stroke แทนเงา เพื่อความเนียน 100%
+                if (line.stroke > 0) {
+                    layersHTML += `<span style="grid-column: 1; grid-row: 1; color: black; -webkit-text-stroke: ${line.stroke * 2}px black; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; width: 100%;">${line.text}</span>`;
+                }
+
+                // Layer 3: ข้อความสีเนื้อใน (Top Fill Layer)
+                // เทคนิค: เติมขอบสีเดียวกับข้อความบางๆ 1.5px เพื่อทับรอยหยัก (Anti-alias) ที่เกิดจากรอยต่อของข้อความกับสีดำ
+                let fixAntialias = line.stroke > 0 ? `-webkit-text-stroke: 1.5px ${line.color};` : '';
+                layersHTML += `<span style="grid-column: 1; grid-row: 1; color: ${line.color}; ${fixAntialias} font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; text-shadow: none; width: 100%;">${line.text}</span>`;
 
                 linesHTML += `
                     <div style="display: flex; justify-content: ${justify}; width: 100%; transform: translateY(${line.yOffset}px);">
                         <div class="highlight-box-export-fix" style="background-color: ${line.bgColor}; ${radius} ${padding} box-sizing: border-box;">
-                            <span style="color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; ${finalShadowStyle}">${line.text}</span>
+                            <div class="text-layer-wrapper" style="display: grid; width: 100%;">
+                                ${layersHTML}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -457,8 +456,8 @@
                         if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
                             let offset = 5;
                             box.style.position = 'relative'; box.style.top = `${offset}px`;
-                            const textSpan = box.querySelector('span');
-                            if (textSpan) { textSpan.style.position = 'relative'; textSpan.style.top = `${-offset}px`; }
+                            const textWrapper = box.querySelector('.text-layer-wrapper');
+                            if (textWrapper) { textWrapper.style.position = 'relative'; textWrapper.style.top = `${-offset}px`; }
                         }
                     });
                 }
@@ -508,9 +507,20 @@
                             </div>
                             <input type="range" id="range-size-${idx}" min="30" max="250" value="${line.size}" onmousedown="saveToHistory()" ontouchstart="saveToHistory()" oninput="updateLine(${idx}, 'size', parseInt(this.value))" class="w-full">
                         </div>
+                    </div>
+                `;
 
-                        <!-- Colors & Highlights -->
-                        <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
+                // ADVANCED SETTINGS (Hidden by toggle)
+                const advUI = `
+                    <button onclick="toggleAdvancedSettings(${idx})" class="w-full py-2.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-center gap-1 text-xs font-bold text-slate-500 transition">
+                        <i class="ph-bold ph-gear"></i> ตั้งค่าเพิ่มเติม (สี, ไฮไลท์, เงา, ขอบ, เลื่อน)
+                        <i id="adv-icon-${idx}" class="ph-bold ph-caret-down transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}"></i>
+                    </button>
+                    
+                    <div id="adv-settings-${idx}" class="advanced-settings bg-slate-50 p-4 border-t border-slate-200 space-y-4 ${isOpen ? 'open' : ''}">
+                        
+                        <!-- Colors & Highlights Moved Here -->
+                        <div class="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                             <div class="flex gap-1.5 items-center w-full sm:w-auto">
                                 <span class="text-[10px] font-bold text-slate-500 uppercase mr-1 w-10">สีอักษร:</span>
                                 ${defaultColors.map(c => `<button onclick="saveToHistory(); updateLine(${idx}, 'color', '${c.hex}')" class="w-6 h-6 rounded-full shadow-sm border border-slate-200" style="background-color: ${c.hex}; ${line.color === c.hex ? 'ring-2 ring-newsBlue ring-offset-2' : ''}"></button>`).join('')}
@@ -522,17 +532,7 @@
                                 <button onclick="saveToHistory(); updateLine(${idx}, 'bgColor', '#ffffff')" class="w-6 h-6 rounded-full bg-white shadow-sm border border-slate-200 ${line.bgColor === '#ffffff' ? 'ring-2 ring-newsBlue ring-offset-2' : ''}"></button>
                             </div>
                         </div>
-                    </div>
-                `;
 
-                // ADVANCED SETTINGS (Hidden by toggle)
-                const advUI = `
-                    <button onclick="toggleAdvancedSettings(${idx})" class="w-full py-2.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-center gap-1 text-xs font-bold text-slate-500 transition">
-                        <i class="ph-bold ph-gear"></i> ตั้งค่าเพิ่มเติม (เงา, ขอบ, เลื่อน)
-                        <i id="adv-icon-${idx}" class="ph-bold ph-caret-down transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}"></i>
-                    </button>
-                    
-                    <div id="adv-settings-${idx}" class="advanced-settings bg-slate-50 p-4 border-t border-slate-200 space-y-4 ${isOpen ? 'open' : ''}">
                         <div class="space-y-1">
                             <div class="flex justify-between items-center">
                                 <label class="text-xs font-bold text-slate-500">ขยับ ขึ้น-ลง (Y)</label>
@@ -619,8 +619,8 @@
                         if (index === 1) { bTop = 45; tTop = -50; } 
                         else if (index === 2) { bTop = 40; tTop = -40; }
                         box.style.position = 'relative'; box.style.top = bTop + 'px';
-                        const textSpan = box.querySelector('span');
-                        if (textSpan) { textSpan.style.position = 'relative'; textSpan.style.top = tTop + 'px'; }
+                        const textWrapper = box.querySelector('.text-layer-wrapper');
+                        if (textWrapper) { textWrapper.style.position = 'relative'; textWrapper.style.top = tTop + 'px'; }
                     }
                 });
 
