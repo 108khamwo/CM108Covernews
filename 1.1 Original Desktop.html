@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>News Cover Generator V2 - CM108</title>
     
-    <!-- Google Fonts: Prompt -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -28,7 +26,6 @@
         }
     </script>
 
-    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
@@ -46,23 +43,23 @@
             -webkit-appearance: none;
             background: transparent;
             cursor: pointer;
-            height: 36px;
+            height: 28px;
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 8px;
+            height: 6px;
             background: #e2e8f0;
-            border-radius: 4px;
+            border-radius: 3px;
         }
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 24px;
-            width: 24px;
+            height: 18px;
+            width: 18px;
             border-radius: 50%;
             background: #00c0fa;
             border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            margin-top: -8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            margin-top: -6px;
         }
 
         input[type=number]::-webkit-inner-spin-button { display: none; }
@@ -71,17 +68,28 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
+        .menu-section-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 font-prompt min-h-screen flex flex-col overflow-hidden">
 
-    <!-- Header -->
     <header class="bg-white border-b border-slate-200 px-6 py-3 flex justify-between items-center shadow-sm z-50">
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 bg-newsBlue flex items-center justify-center rounded-lg shadow-lg shadow-blue-500/20">
                 <i class="ph-bold ph-layout text-white text-lg"></i>
             </div>
-            <h1 class="text-lg font-bold uppercase tracking-tight">News Cover V2 <span class="text-newsBlue font-black">CM108</span></h1>
+            <h1 class="text-lg font-bold uppercase tracking-tight">News Cover <span class="text-newsBlue font-black">CM108</span></h1>
         </div>
         
         <div class="flex items-center gap-3">
@@ -96,96 +104,94 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="flex-grow flex flex-col lg:flex-row h-[calc(100vh-65px)]">
         
-        <!-- Sidebar Controls -->
-        <aside class="w-full lg:w-[450px] bg-white border-r border-slate-200 overflow-y-auto no-scrollbar flex flex-col shadow-inner relative z-10">
+        <aside class="w-full lg:w-[420px] bg-white border-r border-slate-200 overflow-y-auto no-scrollbar flex flex-col shadow-inner relative z-10">
             
             <div class="p-5 border-b border-slate-100">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <i class="ph-bold ph-image"></i> รูปภาพ & กรอบ (Frame)
-                    </h3>
-                    <button type="button" onclick="resetBG()" class="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">รีเซ็ตภาพ</button>
+                <h3 class="menu-section-title"><i class="ph-bold ph-image"></i> 1. รูปภาพข่าวและกรอบ</h3>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <button type="button" onclick="document.getElementById('bg-upload').click()" class="flex flex-col items-center gap-1 bg-blue-50 border border-blue-100 p-3 rounded-xl hover:bg-blue-100 transition group">
+                        <i class="ph-bold ph-plus-circle text-newsBlue text-xl group-hover:scale-110 transition"></i>
+                        <span class="text-[12px] font-bold text-newsBlue">เปลี่ยนรูปข่าว</span>
+                    </button>
+                    <button type="button" onclick="document.getElementById('frame-upload').click()" class="flex flex-col items-center gap-1 bg-emerald-50 border border-emerald-100 p-3 rounded-xl hover:bg-emerald-100 transition group">
+                        <i class="ph-bold ph-frame-corners text-emerald-500 text-xl group-hover:scale-110 transition"></i>
+                        <span class="text-[12px] font-bold text-emerald-500">เปลี่ยนกรอบ</span>
+                    </button>
+                    <input type="file" id="bg-upload" accept="image/*" class="hidden">
+                    <input type="file" id="frame-upload" accept="image/png, image/webp" class="hidden">
                 </div>
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-3">
-                        <button type="button" onclick="document.getElementById('bg-upload').click()" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold text-newsBlue hover:bg-blue-50 transition shadow-sm">
-                            <i class="ph ph-image mr-1"></i> 1. เปลี่ยนภาพข่าว
-                        </button>
-                        <button type="button" onclick="document.getElementById('frame-upload').click()" class="bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg text-xs font-bold text-emerald-500 hover:bg-emerald-50 transition shadow-sm" title="ต้องเป็นไฟล์ PNG พื้นใสตรงกลาง">
-                            <i class="ph ph-frame-corners mr-1"></i> 2. เปลี่ยนกรอบ (PNG)
-                        </button>
-                        <input type="file" id="bg-upload" accept="image/*" style="position: absolute; width: 1px; height: 1px; opacity: 0;" tabindex="-1">
-                        <input type="file" id="frame-upload" accept="image/png, image/webp" style="position: absolute; width: 1px; height: 1px; opacity: 0;" tabindex="-1">
-                    </div>
-                    
-                    <div class="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                        <div class="flex items-center justify-between pb-2 border-b border-slate-200 mb-2">
-                            <label class="text-[11px] font-bold text-slate-500 uppercase tracking-tight">เบลอพื้นหลัง (กรณีรูปไม่เต็ม)</label>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="bg-blur-toggle" class="sr-only peer">
-                                <div class="w-8 h-4 bg-slate-300 rounded-full peer peer-checked:bg-newsBlue transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
-                            </label>
-                        </div>
 
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 block mb-1">ซูมภาพ <span id="bg-scale-val" class="text-newsBlue float-right">1.0</span></label>
-                                <input type="range" id="bg-scale" min="0.1" max="5" step="0.01" value="1" class="w-full">
-                            </div>
+                <div class="bg-slate-50 p-4 rounded-xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-tighter">ปรับตำแหน่งภาพ</span>
+                        <button onclick="resetBG()" class="text-[10px] font-bold text-red-500 underline uppercase">รีเซ็ต</button>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">ซูมภาพ</label>
+                            <span id="bg-scale-val" class="text-[10px] font-bold text-newsBlue">1.0</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 block mb-1">เลื่อนซ้าย-ขวา (X)</label>
-                                <input type="range" id="bg-x" min="-1500" max="1500" step="1" value="0" class="w-full">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-400 block mb-1">เลื่อนบน-ล่าง (Y)</label>
-                                <input type="range" id="bg-y" min="-1500" max="1500" step="1" value="0" class="w-full">
-                            </div>
+                        <input type="range" id="bg-scale" min="0.1" max="5" step="0.01" value="1" class="w-full">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">เลื่อน ซ้าย-ขวา (X)</label>
+                            <input type="number" id="bg-x-num" class="w-12 text-[10px] font-bold text-newsBlue bg-white border border-slate-200 rounded text-center outline-none">
                         </div>
+                        <input type="range" id="bg-x" min="-1000" max="1000" step="1" value="0" class="w-full">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">เลื่อน บน-ล่าง (Y)</label>
+                            <input type="number" id="bg-y-num" class="w-12 text-[10px] font-bold text-newsBlue bg-white border border-slate-200 rounded text-center outline-none">
+                        </div>
+                        <input type="range" id="bg-y" min="-1000" max="1000" step="1" value="0" class="w-full">
                     </div>
                 </div>
             </div>
 
-            <div class="p-5 flex-grow">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <i class="ph-bold ph-text-aa"></i> พาดหัวข่าว & วันที่
-                    </h3>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="resetTextGlobal()" class="text-[10px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded transition">รีเซ็ต</button>
-                        <div class="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Gap:</span>
-                            <input type="number" id="line-gap" value="8" class="w-8 bg-transparent text-center text-xs font-bold outline-none text-newsBlue">
+            <div class="p-5 border-b border-slate-100">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="menu-section-title !mb-0"><i class="ph-bold ph-text-aa"></i> 2. ข้อความพาดหัว</h3>
+                    <div class="flex items-center gap-2 bg-slate-100 px-2 py-1 rounded-lg">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">ช่องไฟ:</span>
+                        <input type="number" id="line-gap" value="8" class="w-8 bg-transparent text-center text-xs font-bold outline-none text-newsBlue">
+                    </div>
+                </div>
+                <div id="lines-container" class="space-y-4">
+                </div>
+            </div>
+
+            <div class="p-5">
+                <h3 class="menu-section-title"><i class="ph-bold ph-calendar-blank"></i> 3. วันที่และตำแหน่งรวม</h3>
+                <div class="space-y-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase block mb-1">ข้อความวันที่</label>
+                        <input type="text" id="date-text" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-center focus:ring-2 focus:ring-newsBlue outline-none">
+                    </div>
+                    
+                    <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <div class="flex justify-between mb-1">
+                            <label class="text-[10px] font-bold text-blue-500 uppercase">เลื่อนข้อความทั้งหมด ขึ้น-ลง</label>
+                            <input type="number" id="text-y-num" value="-10" class="text-[10px] font-bold text-blue-600 bg-transparent text-right outline-none w-10">
                         </div>
+                        <input type="range" id="text-y" min="-800" max="800" step="1" value="-10" class="w-full accent-blue-600">
                     </div>
+                    
+                    <button type="button" onclick="resetTextGlobal()" class="w-full py-2 text-[11px] font-bold text-slate-400 hover:text-red-500 border border-dashed border-slate-300 rounded-lg transition hover:border-red-300">
+                        รีเซ็ตข้อความและวันที่ทั้งหมด
+                    </button>
                 </div>
-
-                <div class="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100 shadow-sm">
-                    <div class="flex justify-between mb-1">
-                        <label class="text-[10px] font-bold text-blue-500 uppercase">เลื่อนข้อความทั้งก้อน (พาดหัว+วันที่)</label>
-                        <input type="number" id="text-y-num" value="-10" class="text-[10px] font-bold text-blue-500 bg-transparent text-right outline-none w-10">
-                    </div>
-                    <input type="range" id="text-y" min="-800" max="800" step="1" value="-10" class="w-full accent-blue-500">
-                </div>
-
-                <!-- Input วันที่ -->
-                <div class="mb-5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">ข้อความวันที่</h3>
-                    <input type="text" id="date-text" value="" class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-newsBlue outline-none font-medium text-center font-prompt">
-                </div>
-
-                <div id="lines-container" class="space-y-4"></div>
             </div>
 
         </aside>
 
-        <!-- Preview Area -->
         <section id="preview-wrapper" class="flex-grow canvas-bg relative p-6 flex justify-center items-center overflow-hidden z-0">
-            
             <div id="scale-container" class="shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-black relative">
                 <div id="capture-area" style="width: 1080px; height: 1350px; transform-origin: top left;"></div>
             </div>
@@ -193,20 +199,15 @@
             <div id="loading-overlay" class="absolute inset-0 bg-white/95 backdrop-blur-sm z-[100] flex flex-col items-center justify-center hidden">
                 <div class="w-14 h-14 border-4 border-slate-100 border-t-newsBlue rounded-full animate-spin"></div>
                 <p class="mt-4 font-bold text-slate-700 uppercase tracking-tighter">กำลังบันทึกภาพ...</p>
-                <p class="text-xs text-slate-400 mt-1">กำลังเรนเดอร์กราฟิกและกรอบภาพ</p>
             </div>
         </section>
     </main>
 
     <script>
-        const defaultFrame = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjEzNTAiIHZpZXdCb3g9IjAgMCAxMDgwIDEzNTAiPgo8IS0tIFRvcC9TaWRlIEJvcmRlcnMgLS0+CjxwYXRoIGQ9Ik0wLDBIMTA4MFYxMzUwSDBaIE00MCw0MEgxMDQwVjEwODBINDBaIiBmaWxsPSIjMDBjMGZhIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz4KPCEtLSBCb3R0b20gRm9vdGVyIEFyZWEgLS0+CjxyZWN0IHg9IjAiIHk9IjEwODAiIHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjI3MCIgZmlsbD0id2hpdGUiLz4KPHRleHQgeD0iNTQwIiB5PSIxMjAwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNwb25zb3IgJmFtcDsgRm9vdGVyIEFyZWE8L3RleHQ+CjwhLS0gVG9wIExlZnQgTG9nbyAtLT4KPGNpcmNsZSBjeD0iMTMwIiBjeT0iMTMwIiByPSI4MCIgZmlsbD0iIzAwYzBmYSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSI4Ii8+Cjx0ZXh0IHg9IjEzMCIgeT0iMTQwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI0MCIgZm9udC13ZWlnaHQ9ImJvbGQiIGZpbGw9IndoaXRlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DTTEwODwvdGV4dD4KPC9zdmc+";
+        const defaultFrame = "https://wsrv.nl/?url=blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiOOtphYnEgsG_Q_5Ht_nM8h4hBJkTlJ0HvXwVOlixbfIkYC4y4NTIxcfl58PvyUi9Tj9azFCGGRCK3ysLAyX3yzXVHRmfbtsau733we6uQ3DE6csoMtWBMG2TNS2i-8aOtvIKTpzkCIyh3avLpViH74sW5SnwEZCkkToZeB4Q6VO-cxHafdputo5SmSxE/s16000/%E0%B8%81%E0%B8%A3%E0%B8%AD%E0%B8%9A%E0%B9%80%E0%B8%9B%E0%B8%A5%E0%B9%88%E0%B8%B2.png&output=png";
 
-        // ฟังก์ชันสร้างวันที่ปัจจุบันแบบไทย
         function getThaiToday() {
-            const months = [
-                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
-            ];
+            const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             const d = new Date();
             const day = d.getDate();
             const month = months[d.getMonth()];
@@ -214,9 +215,6 @@
             return `- ${day} ${month} ${year} -`;
         }
 
-        const currentThaiDate = getThaiToday();
-
-        // --- App State ---
         let state = {
             lines: [
                 { text: 'ประกันสังคม คว้ารางวัล', color: '#4bfafc', bgColor: 'transparent', size: 97, align: 'center', shadow: true, shadowOffset: 3, stroke: 6, yOffset: 25 },
@@ -227,13 +225,13 @@
             frame: { src: defaultFrame },
             textPos: { y: -10 },
             gap: 8,
-            date: { text: currentThaiDate }
+            date: { text: getThaiToday() }
         };
 
         let historyStack = [];
         const defaultColors = [
-            { name: 'ฟ้าพรีเมียม', hex: '#4bfafc' }, { name: 'ฟ้า CM', hex: '#0bc8fa' }, { name: 'ขาว', hex: '#ffffff' }, 
-            { name: 'ส้มพิเศษ', hex: '#ff9012' }, { name: 'ส้มทอง', hex: '#f59e0b' }, { name: 'ดำ', hex: '#000000' }
+            { hex: '#4bfafc' }, { hex: '#0bc8fa' }, { hex: '#ffffff' }, 
+            { hex: '#ff9012' }, { hex: '#f59e0b' }, { hex: '#000000' }
         ];
 
         function saveToHistory() {
@@ -247,6 +245,7 @@
             state = historyStack.pop();
             renderAll();
             syncInputs();
+            renderControls();
             updateUndoButton();
         }
 
@@ -256,11 +255,10 @@
         }
 
         function updateLine(idx, key, val) {
-            const isSlider = ['size', 'yOffset', 'stroke', 'shadowOffset'].includes(key);
-            if (!isSlider) saveToHistory();
+            // ไม่ต้อง Auto-save ใน function นี้อีกต่อไป เพราะจัดการตอน mousedown/focus ที่ตัว input แล้ว
             state.lines[idx][key] = val;
             
-            if (isSlider) {
+            if (['size', 'yOffset', 'stroke', 'shadowOffset'].includes(key)) {
                 const rangeInput = document.getElementById(`range-${key}-${idx}`);
                 const numInput = document.getElementById(`num-${key}-${idx}`);
                 if (rangeInput) rangeInput.value = val;
@@ -268,12 +266,16 @@
             }
             
             renderAll();
-            if (!isSlider) renderControls(); 
+            
+            // Re-render controls เฉพาะกรณีที่เป็นปุ่มกด (ไม่ต้อง re-render ถ้าเป็น slider/text)
+            if (['align', 'shadow', 'color', 'bgColor'].includes(key)) {
+                renderControls(); 
+            }
         }
 
         function resetBG() {
             saveToHistory();
-            state.bg.scale = 1; state.bg.x = 0; state.bg.y = 0; state.bg.blur = false;
+            state.bg.scale = 1; state.bg.x = 0; state.bg.y = 0;
             syncInputs(); renderAll();
         }
 
@@ -294,7 +296,7 @@
             saveToHistory();
             state.textPos.y = -10;
             state.gap = 8;
-            state.date = { text: getThaiToday() };
+            state.date.text = getThaiToday();
             syncInputs();
             renderAll();
         }
@@ -352,8 +354,6 @@
                 `;
             });
 
-            // ปรับขนาดฟอนต์ (34px) และความหนา (600) ของวันที่ในหน้าพรีวิวให้เท่ากับตอน Export
-            // แก้ไข: ปรับลด margin-top จาก 25px เหลือ 15px เพื่อขยับขึ้น 1 สเตป
             const textGroupHTML = `
                 <div id="headlines-export-wrapper" style="position: absolute; bottom: 280px; left: 0; width: 1080px; display: flex; flex-direction: column; align-items: center; z-index: 20; transform: translateY(${state.textPos.y}px);">
                     <div style="display: flex; flex-direction: column; width: 1040px; gap: ${parseInt(state.gap) + 20}px;">
@@ -379,47 +379,70 @@
                     fgContainerHTML = ``;
                 } else {
                     blurLayerHTML = `<div style="position: absolute; top: -15%; left: -15%; width: 130%; height: 130%; z-index: 1; background-color: #000;"><img src="${state.bg.src}" crossorigin="anonymous" style="width: 100%; height: 100%; object-fit: cover; filter: blur(${blurValPreview}px) brightness(0.6); -webkit-filter: blur(${blurValPreview}px) brightness(0.6);"></div>`;
-                    let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); box-shadow: 0 0 60px rgba(0,0,0,0.65); border: none !important; outline: none !important;`;
-                    fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin="anonymous"></div>`;
+                    let fgImageStyle = `width: 1080px; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); box-shadow: 0 0 60px rgba(0,0,0,0.65); border: none !important; outline: none !important;`;
+                    fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 0px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin="anonymous"></div>`;
                 }
             } else {
-                let fgImageStyle = `max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); border: none !important; outline: none !important;`;
-                fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 100px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin=\"anonymous\"></div>`;
+                let fgImageStyle = `width: 1080px; height: auto; display: block; image-rendering: -webkit-optimize-contrast; transform: translate(${state.bg.x}px, ${state.bg.y}px) scale(${state.bg.scale}); border: none !important; outline: none !important;`;
+                fgContainerHTML = `<div style="position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; z-index: 2; display: flex; align-items: flex-start; justify-content: center; padding-top: 0px;"><img src="${state.bg.src}" style="${fgImageStyle}" crossorigin=\"anonymous\"></div>`;
             }
+
+            // คำนวณความสูงของเฟดสีดำ: หากไม่มีบรรทัดที่ 3 ให้ลดความสูงของเงาลงมา
+            const hasLine3 = state.lines[2] && state.lines[2].text.trim() !== '';
+            const gradientHeight = hasLine3 ? 740 : 640;
 
             return `
                 <div style="width: 1080px; height: 1350px; position: relative; overflow: hidden; background-color: #000; box-sizing: border-box;">
                     ${blurLayerHTML}
                     ${fgContainerHTML}
-                    <div style="position: absolute; bottom: 0px; left: 0px; right: 0px; height: 850px; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 78%, rgba(0,0,0,0.5) 86%, transparent 90%); z-index: 10; pointer-events: none;"></div>
+                    <div style="position: absolute; bottom: 0px; left: 0px; right: 0px; height: ${gradientHeight}px; background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 80%, rgba(0,0,0,0.8) 88%, rgba(0,0,0,0.4) 94%, rgba(0,0,0,0.1) 98%, transparent 100%); z-index: 10; pointer-events: none;"></div>
                     ${textGroupHTML}
                     ${frameLayerHTML}
                 </div>
             `;
         }
 
+        let renderAnimationFrame = null;
+
         function renderAll() {
-            const area = document.getElementById('capture-area');
-            if (area) {
-                area.innerHTML = generateArtworkHTML(false, null);
-                const highlights = area.querySelectorAll('.highlight-box-export-fix');
-                highlights.forEach((box, index) => {
-                    if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
-                        let offset = 5;
-                        box.style.position = 'relative';
-                        box.style.top = `${offset}px`;
-                        const textSpan = box.querySelector('span');
-                        if (textSpan) {
-                            textSpan.style.position = 'relative';
-                            textSpan.style.top = `${-offset}px`;
-                        }
-                    }
-                });
+            if (renderAnimationFrame) {
+                cancelAnimationFrame(renderAnimationFrame);
             }
-            const scaleLbl = document.getElementById('bg-scale-val');
-            const posNum = document.getElementById('text-y-num');
-            if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
-            if (posNum) posNum.value = state.textPos.y;
+            
+            renderAnimationFrame = requestAnimationFrame(() => {
+                const area = document.getElementById('capture-area');
+                if (area) {
+                    area.innerHTML = generateArtworkHTML(false, null);
+                    
+                    const hasLine3 = state.lines[2] && state.lines[2].text.trim() !== '';
+                    const highlights = area.querySelectorAll('.highlight-box-export-fix');
+                    
+                    highlights.forEach((box, index) => {
+                        let previewParentTop = 0;
+                        if (!hasLine3 && (index === 0 || index === 1)) {
+                            previewParentTop = -5; // ขยับขึ้น 5px ในพรีวิวถ้าไม่มีบรรทัดที่ 3
+                        }
+                        
+                        if (previewParentTop !== 0) {
+                            box.parentElement.style.position = 'relative';
+                            box.parentElement.style.top = `${previewParentTop}px`;
+                        }
+
+                        if (box.style.backgroundColor !== 'transparent' && box.style.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                            let offset = 5;
+                            box.style.position = 'relative';
+                            box.style.top = `${offset}px`;
+                            const textSpan = box.querySelector('span');
+                            if (textSpan) {
+                                textSpan.style.position = 'relative';
+                                textSpan.style.top = `${-offset}px`;
+                            }
+                        }
+                    });
+                }
+                const scaleLbl = document.getElementById('bg-scale-val');
+                if (scaleLbl) scaleLbl.innerText = parseFloat(state.bg.scale).toFixed(2);
+            });
         }
 
         function renderControls() {
@@ -428,61 +451,54 @@
             
             state.lines.forEach((line, idx) => {
                 const card = document.createElement('div');
-                card.className = "bg-white border border-slate-200 rounded-2xl p-4 space-y-4 shadow-sm hover:border-newsBlue/20 transition-all";
+                card.className = "bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-newsBlue/30 transition-all";
                 card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold text-newsBlue uppercase tracking-widest flex items-center gap-1.5">
-                            บรรทัดที่ ${idx+1}
-                            <button onclick="resetLine(${idx})" class="w-5 h-5 flex items-center justify-center rounded bg-blue-50 text-newsBlue hover:bg-red-50 hover:text-red-500 transition" title="รีเซ็ตสไตล์บรรทัดนี้">
-                                <i class="ph ph-arrow-counter-clockwise"></i>
-                            </button>
-                        </span>
-                        <div class="flex gap-1.5">
-                            <button onclick="updateLine(${idx}, 'align', 'left')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'left' ? 'bg-newsBlue text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'} transition"><i class="ph ph-text-align-left"></i></button>
-                            <button onclick="updateLine(${idx}, 'align', 'center')" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.align === 'center' ? 'bg-newsBlue text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'} transition"><i class="ph ph-text-align-center"></i></button>
-                            <button onclick="updateLine(${idx}, 'shadow', ${!line.shadow})" class="w-8 h-8 flex items-center justify-center rounded-lg ${line.shadow ? 'bg-slate-800 text-white shadow-sm' : 'bg-slate-100 text-slate-400'} transition"><i class="ph ph-drop"></i></button>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">บรรทัดที่ ${idx+1}</span>
+                        <div class="flex gap-1">
+                            <button onclick="saveToHistory(); updateLine(${idx}, 'align', 'left')" class="p-1.5 rounded ${line.align === 'left' ? 'bg-newsBlue text-white' : 'text-slate-400 hover:bg-slate-100'} transition"><i class="ph-bold ph-text-align-left text-sm"></i></button>
+                            <button onclick="saveToHistory(); updateLine(${idx}, 'align', 'center')" class="p-1.5 rounded ${line.align === 'center' ? 'bg-newsBlue text-white' : 'text-slate-400 hover:bg-slate-100'} transition"><i class="ph-bold ph-text-align-center text-sm"></i></button>
+                            <button onclick="resetLine(${idx})" class="p-1.5 text-slate-300 hover:text-red-500 transition"><i class="ph-bold ph-arrow-counter-clockwise text-sm"></i></button>
                         </div>
                     </div>
                     
-                    <textarea oninput="updateLine(${idx}, 'text', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:bg-white focus:ring-2 focus:ring-newsBlue outline-none transition-all resize-none font-prompt" rows="1">${line.text}</textarea>
+                    <textarea onfocus="saveToHistory()" oninput="updateLine(${idx}, 'text', this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:bg-white focus:ring-2 focus:ring-newsBlue outline-none transition-all resize-none font-prompt mb-3" rows="1" placeholder="พิมพ์ข้อความที่นี่...">${line.text}</textarea>
                     
                     <div class="space-y-3">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ฟอนต์:</label><input type="number" id="num-size-${idx}" min="30" max="250" value="${line.size}" oninput="updateLine(${idx}, 'size', parseInt(this.value) || 30)" class="w-12 text-xs font-bold text-newsBlue bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
-                                <input type="range" id="range-size-${idx}" min="30" max="250" value="${line.size}" oninput="updateLine(${idx}, 'size', parseInt(this.value))" class="w-full">
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขนาด:</label><input type="number" id="num-size-${idx}" min="30" max="250" value="${line.size}" onfocus="saveToHistory()" oninput="updateLine(${idx}, 'size', parseInt(this.value) || 30)" class="w-10 text-[10px] font-bold text-newsBlue bg-slate-100 rounded text-center outline-none"></div>
+                                <input type="range" id="range-size-${idx}" min="30" max="250" value="${line.size}" onmousedown="saveToHistory()" ontouchstart="saveToHistory()" oninput="updateLine(${idx}, 'size', parseInt(this.value))" class="w-full">
                             </div>
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขยับ Y:</label><input type="number" id="num-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-emerald-500 bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
-                                <input type="range" id="range-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value))" class="w-full accent-emerald-500">
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขยับ Y:</label><input type="number" id="num-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" onfocus="saveToHistory()" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value) || 0)" class="w-10 text-[10px] font-bold text-emerald-500 bg-slate-100 rounded text-center outline-none"></div>
+                                <input type="range" id="range-yOffset-${idx}" min="-150" max="150" value="${line.yOffset}" onmousedown="saveToHistory()" ontouchstart="saveToHistory()" oninput="updateLine(${idx}, 'yOffset', parseInt(this.value))" class="w-full accent-emerald-500">
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขอบดำ:</label><input type="number" id="num-stroke-${idx}" min="0" max="15" value="${line.stroke}" oninput="updateLine(${idx}, 'stroke', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-black bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
-                                <input type="range" id="range-stroke-${idx}" min="0" max="15" value="${line.stroke}" oninput="updateLine(${idx}, 'stroke', parseInt(this.value))" class="w-full accent-black">
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ขอบดำ:</label><input type="number" id="num-stroke-${idx}" min="0" max="15" value="${line.stroke}" onfocus="saveToHistory()" oninput="updateLine(${idx}, 'stroke', parseInt(this.value) || 0)" class="w-10 text-[10px] font-bold text-black bg-slate-100 rounded text-center outline-none"></div>
+                                <input type="range" id="range-stroke-${idx}" min="0" max="15" value="${line.stroke}" onmousedown="saveToHistory()" ontouchstart="saveToHistory()" oninput="updateLine(${idx}, 'stroke', parseInt(this.value))" class="w-full accent-black">
                             </div>
                             <div>
-                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ระยะเงา:</label><input type="number" id="num-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value) || 0)" class="w-12 text-xs font-bold text-gray-600 bg-slate-100 rounded px-1 py-0.5 text-center outline-none"></div>
-                                <input type="range" id="range-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value))" class="w-full accent-gray-600">
+                                <div class="flex justify-between items-center mb-1"><label class="text-[10px] font-bold text-slate-400 uppercase">ระยะเงา:</label><input type="number" id="num-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" onfocus="saveToHistory()" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value) || 0)" class="w-10 text-[10px] font-bold text-gray-600 bg-slate-100 rounded text-center outline-none"></div>
+                                <input type="range" id="range-shadowOffset-${idx}" min="0" max="20" value="${line.shadowOffset}" onmousedown="saveToHistory()" ontouchstart="saveToHistory()" oninput="updateLine(${idx}, 'shadowOffset', parseInt(this.value))" class="w-full accent-gray-600">
                             </div>
                         </div>
-
-                        <div class="flex items-center gap-3">
-                            <label class="text-[10px] font-bold text-slate-400 w-12">สีอักษร:</label>
-                            <div class="flex gap-1.5 flex-wrap">
-                                ${defaultColors.map(c => `<button onclick="updateLine(${idx}, 'color', '${c.hex}')" class="w-6 h-6 rounded-full border border-slate-200 shadow-sm transition hover:scale-110" style="background-color: ${c.hex}; ${line.color === c.hex ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>`).join('')}
-                                <input type="color" value="${line.color}" oninput="updateLine(${idx}, 'color', this.value)" class="w-6 h-6 p-0 border-0 rounded-full cursor-pointer shadow-sm">
+                        
+                        <div class="flex items-center justify-between pt-1">
+                            <div class="flex gap-1 items-center">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase mr-1">สี:</span>
+                                ${defaultColors.map(c => `<button onclick="saveToHistory(); updateLine(${idx}, 'color', '${c.hex}')" class="w-5 h-5 rounded-full border border-slate-200 shadow-xs" style="background-color: ${c.hex}; ${line.color === c.hex ? 'ring-2 ring-newsBlue ring-offset-1' : ''}"></button>`).join('')}
+                                <input type="color" value="${line.color}" onfocus="saveToHistory()" onclick="saveToHistory()" oninput="updateLine(${idx}, 'color', this.value)" class="w-5 h-5 p-0 border-0 rounded-full cursor-pointer ml-1">
                             </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <label class="text-[10px] font-bold text-slate-400 w-12">ไฮไลท์:</label>
-                            <div class="flex gap-1.5 items-center">
-                                <button onclick="updateLine(${idx}, 'bgColor', 'transparent')" class="text-[9px] font-bold px-2 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition">ไม่มี</button>
-                                <button onclick="updateLine(${idx}, 'bgColor', '#0bc8fa')" class="w-6 h-6 rounded-full bg-[#0bc8fa] border border-slate-300 shadow-sm" style="${line.bgColor === '#0bc8fa' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
-                                <button onclick="updateLine(${idx}, 'bgColor', '#ffffff')" class="w-6 h-6 rounded-full bg-white border border-slate-300 shadow-sm" style="${line.bgColor === '#ffffff' ? 'outline: 2px solid #00c0fa; outline-offset: 1px;' : ''}"></button>
-                                <input type="color" value="${line.bgColor === 'transparent' ? '#ffffff' : line.bgColor}" oninput="updateLine(${idx}, 'bgColor', this.value)" class="w-6 h-6 p-0 border-0 rounded-full cursor-pointer shadow-sm">
+                            <div class="flex gap-1 items-center border-l border-slate-100 pl-3">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase mr-1">ไฮไลท์:</span>
+                                <button onclick="saveToHistory(); updateLine(${idx}, 'bgColor', 'transparent')" class="w-5 h-5 rounded-full border border-slate-300 relative overflow-hidden" title="ไม่มี"><div class="absolute inset-0 bg-white"></div><div class="absolute inset-0 bg-red-500 w-[1px] rotate-45 left-1/2"></div></button>
+                                <button onclick="saveToHistory(); updateLine(${idx}, 'bgColor', '#0bc8fa')" class="w-5 h-5 rounded-full bg-[#0bc8fa] ${line.bgColor === '#0bc8fa' ? 'ring-2 ring-newsBlue ring-offset-1' : ''}"></button>
+                                <button onclick="saveToHistory(); updateLine(${idx}, 'bgColor', '#ffffff')" class="w-5 h-5 rounded-full bg-white border border-slate-200 ${line.bgColor === '#ffffff' ? 'ring-2 ring-newsBlue ring-offset-1' : ''}"></button>
+                                <input type="color" value="${line.bgColor === 'transparent' ? '#ffffff' : line.bgColor}" onfocus="saveToHistory()" onclick="saveToHistory()" oninput="updateLine(${idx}, 'bgColor', this.value)" class="w-5 h-5 p-0 border-0 rounded-full cursor-pointer shadow-sm ml-1">
                             </div>
                         </div>
                     </div>
@@ -492,30 +508,23 @@
         }
 
         function syncInputs() {
-            const ids = ['bg-scale', 'bg-x', 'bg-y', 'bg-blur-toggle', 'text-y', 'text-y-num', 'line-gap', 'date-text'];
-            ids.forEach(id => {
-                const el = document.getElementById(id);
-                if (!el) return;
-                if (id === 'bg-blur-toggle') el.checked = state.bg.blur;
-                else if (id === 'date-text') el.value = state.date.text;
-                else if (id === 'bg-scale') el.value = state.bg.scale;
-                else if (id === 'bg-x') el.value = state.bg.x;
-                else if (id === 'bg-y') el.value = state.bg.y;
-                else if (id === 'text-y' || id === 'text-y-num') el.value = state.textPos.y;
-                else if (id === 'line-gap') el.value = state.gap;
-            });
+            document.getElementById('bg-scale').value = state.bg.scale;
+            document.getElementById('bg-x').value = state.bg.x;
+            document.getElementById('bg-y').value = state.bg.y;
+            document.getElementById('bg-x-num').value = state.bg.x;
+            document.getElementById('bg-y-num').value = state.bg.y;
+            document.getElementById('text-y').value = state.textPos.y;
+            document.getElementById('text-y-num').value = state.textPos.y;
+            document.getElementById('line-gap').value = state.gap;
+            document.getElementById('date-text').value = state.date.text;
         }
 
         function handleResize() {
             const wrapper = document.getElementById('preview-wrapper');
             const container = document.getElementById('scale-container');
             const artwork = document.getElementById('capture-area');
-            if (!wrapper || !container || !artwork) return;
-            const w = wrapper.clientWidth - 40;
-            const h = wrapper.clientHeight - 40;
-            const scale = Math.min(w / 1080, h / 1350, 1);
+            const scale = Math.min((wrapper.clientWidth - 40) / 1080, (wrapper.clientHeight - 40) / 1350, 1);
             artwork.style.transform = `scale(${scale})`;
-            artwork.style.transformOrigin = `top left`;
             container.style.width = `${1080 * scale}px`;
             container.style.height = `${1350 * scale}px`;
         }
@@ -541,15 +550,15 @@
                             const bleed = 80; bgDrawW += bleed * 2; bgDrawH += bleed * 2;
                             ctx.drawImage(img, (canvas.width - bgDrawW) / 2, (canvas.height - bgDrawH) / 2, bgDrawW, bgDrawH);
                             ctx.filter = 'none';
-                            let fgW = img.width; let fgH = img.height;
-                            if (fgW > 1080) { fgH = fgH * (1080 / fgW); fgW = 1080; }
-                            if (fgH > 1250) { fgW = fgW * (1250 / fgH); fgH = 1250; }
+                            
+                            let fgW = 1080;
+                            let fgH = img.height * (1080 / img.width);
                             const scale = parseFloat(state.bg.scale);
                             ctx.save();
-                            ctx.translate((1080 / 2) + parseFloat(state.bg.x), 100 + (fgH / 2) + parseFloat(state.bg.y));
+                            ctx.translate((1080 / 2) + parseFloat(state.bg.x), (fgH / 2) * scale + parseFloat(state.bg.y));
                             ctx.scale(scale, scale);
                             ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'; ctx.shadowBlur = 60;
-                            ctx.drawImage(img, -fgW / 2, -fgH / 2, fgW, fgH);
+                            ctx.drawImage(img, -img.width / 2, -img.height / 2, img.width, img.height);
                             ctx.restore();
                             resolve(canvas.toDataURL('image/jpeg', 0.9));
                         };
@@ -561,15 +570,19 @@
                 exportContainer.style.width = '1080px'; exportContainer.style.height = '1350px';
                 exportContainer.innerHTML = generateArtworkHTML(true, exportUnifiedBgSrc);
                 
+                const hasLine3 = state.lines[2] && state.lines[2].text.trim() !== '';
+
                 const highlightBoxes = exportContainer.querySelectorAll('.highlight-box-export-fix');
                 highlightBoxes.forEach((box, index) => {
                     let parentTop = -15; // Default
                     if (index === 0) {
-                        parentTop = -25; // Up 10
+                        parentTop = -22; // เลื่อนลง 3px (จากเดิม -25)
+                        if (!hasLine3) parentTop -= 15; // ขยับขึ้น 15px กรณีมีแค่บรรทัด 1 และ 2
                     } else if (index === 1) {
                         parentTop = -15; // Reset
+                        if (!hasLine3) parentTop -= 15; // ขยับขึ้น 15px กรณีมีแค่บรรทัด 1 และ 2
                     } else if (index === 2) {
-                        parentTop = -5;  // Down 10
+                        parentTop = -2;  // เลื่อนลง 3px (จากเดิม -5)
                     }
                     
                     box.parentElement.style.position = 'relative'; 
@@ -621,29 +634,70 @@
         }
 
         window.onload = () => {
-            renderControls(); renderAll(); handleResize();
+            renderControls(); renderAll(); handleResize(); syncInputs();
             window.addEventListener('resize', handleResize);
-            document.getElementById('bg-upload').addEventListener('change', function(e) { if (e.target.files && e.target.files[0]) { saveToHistory(); state.bg.src = URL.createObjectURL(e.target.files[0]); renderAll(); } });
+            
+            document.getElementById('bg-upload').addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const url = URL.createObjectURL(e.target.files[0]);
+                    const img = new Image();
+                    img.onload = function() {
+                        saveToHistory();
+                        state.bg.src = url;
+                        const heightAtWidth1080 = 1080 * (img.height / img.width);
+                        state.bg.scale = heightAtWidth1080 < 920 ? (920 / heightAtWidth1080).toFixed(2) : 1.0;
+                        state.bg.x = 0; state.bg.y = 0;
+                        renderAll(); syncInputs();
+                    };
+                    img.src = url;
+                }
+            });
+
             document.getElementById('frame-upload').addEventListener('change', function(e) { if (e.target.files && e.target.files[0]) { saveToHistory(); state.frame.src = URL.createObjectURL(e.target.files[0]); renderAll(); } });
-            document.getElementById('bg-blur-toggle').addEventListener('change', function(e) { saveToHistory(); state.bg.blur = e.target.checked; renderAll(); });
-            ['bg-scale', 'bg-x', 'bg-y', 'text-y', 'text-y-num', 'line-gap'].forEach(id => {
+            
+            // ปรับปรุงการผูกเหตุการณ์ Save History ให้อยู่ก่อนการเปลี่ยนแปลงค่า
+            ['bg-scale', 'bg-x', 'bg-y', 'bg-x-num', 'bg-y-num', 'text-y', 'text-y-num', 'line-gap'].forEach(id => {
                 const el = document.getElementById(id);
+                if (!el) return;
+                
+                // ดักจับเหตุการณ์ก่อนค่าจะถูกแก้
+                if (el.type === 'range') {
+                    el.addEventListener('mousedown', saveToHistory);
+                    el.addEventListener('touchstart', saveToHistory, {passive: true});
+                } else if (el.type === 'number' || el.type === 'text') {
+                    el.addEventListener('focus', saveToHistory);
+                }
+
                 el.oninput = (e) => {
                     let val = e.target.value;
-                    if (id === 'bg-scale') state.bg.scale = val;
-                    else if (id === 'bg-x') state.bg.x = val;
-                    else if (id === 'bg-y') state.bg.y = val;
-                    else if (id === 'text-y' || id === 'text-y-num') { state.textPos.y = val; document.getElementById('text-y').value = val; document.getElementById('text-y-num').value = val; }
-                    else if (id === 'line-gap') state.gap = val;
+                    if (id === 'bg-scale') {
+                        state.bg.scale = val;
+                    } else if (id === 'bg-x' || id === 'bg-x-num') {
+                        state.bg.x = parseInt(val) || 0;
+                        document.getElementById('bg-x').value = state.bg.x;
+                        document.getElementById('bg-x-num').value = state.bg.x;
+                    } else if (id === 'bg-y' || id === 'bg-y-num') {
+                        state.bg.y = parseInt(val) || 0;
+                        document.getElementById('bg-y').value = state.bg.y;
+                        document.getElementById('bg-y-num').value = state.bg.y;
+                    } else if (id === 'text-y' || id === 'text-y-num') { 
+                        state.textPos.y = val; 
+                        document.getElementById('text-y').value = val; 
+                        document.getElementById('text-y-num').value = val; 
+                    } else if (id === 'line-gap') {
+                        state.gap = val;
+                    }
                     renderAll();
                 };
-                el.onchange = () => saveToHistory();
             });
-            document.getElementById('date-text').oninput = (e) => { state.date.text = e.target.value; renderAll(); };
-            document.getElementById('date-text').onchange = () => saveToHistory();
-            window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } });
+
+            const dateTextEl = document.getElementById('date-text');
+            if (dateTextEl) {
+                dateTextEl.addEventListener('focus', saveToHistory);
+                dateTextEl.oninput = (e) => { state.date.text = e.target.value; renderAll(); };
+            }
             
-            document.getElementById('date-text').value = state.date.text;
+            window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); } });
         };
     </script>
 </body>
