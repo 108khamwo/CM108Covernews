@@ -387,9 +387,9 @@
                 }
 
                 // Layer 3: ข้อความสีเนื้อใน (Top Fill Layer)
-                // เทคนิค: เติมขอบสีเดียวกับข้อความบางๆ 1.5px เพื่อทับรอยหยัก (Anti-alias) ที่เกิดจากรอยต่อของข้อความกับสีดำ
-                let fixAntialias = line.stroke > 0 ? `-webkit-text-stroke: 1.5px ${line.color};` : '';
-                layersHTML += `<span style="grid-column: 1; grid-row: 1; color: ${line.color}; ${fixAntialias} font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; text-shadow: none; width: 100%;">${line.text}</span>`;
+                // แก้ปัญหาเส้นดำทะลุ: เลิกใช้ text-stroke ในเลเยอร์บนสุด แล้วใช้ text-shadow เกลี่ยรอยต่อสีแทน
+                let fixAntialias = line.stroke > 0 ? `text-shadow: -1.5px -1.5px 0 ${line.color}, 1.5px -1.5px 0 ${line.color}, -1.5px 1.5px 0 ${line.color}, 1.5px 1.5px 0 ${line.color};` : 'text-shadow: none;';
+                layersHTML += `<span style="grid-column: 1; grid-row: 1; color: ${line.color}; font-size: ${line.size}px; font-weight: 700; line-height: 1.15; display: block; white-space: pre-wrap; text-align: ${textAlign}; position: relative; z-index: ${zIdx++}; ${fixAntialias} width: 100%;">${line.text}</span>`;
 
                 linesHTML += `
                     <div style="display: flex; justify-content: ${justify}; width: 100%; transform: translateY(${line.yOffset}px);">
