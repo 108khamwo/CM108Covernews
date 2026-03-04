@@ -17,7 +17,7 @@
             theme: {
                 extend: {
                     fontFamily: { prompt: ['Prompt', 'sans-serif'] },
-                    colors: { newsBlue: '#00c0fa', newsDark: '#0f172a', newsAccent: '#f59e0b' }
+                    colors: { newsBlue: '#00c0fa', newsDark: '#0f172a', newsAccent: '#f59e0b', lineGreen: '#00B900' }
                 }
             }
         }
@@ -143,16 +143,34 @@
 
         </div>
 
-        <!-- Resources Section -->
-        <div class="flex justify-center animate-fade-in" style="animation-delay: 0.3s;">
+        <!-- Resources & Contact Section -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 justify-center max-w-2xl mx-auto animate-fade-in" style="animation-delay: 0.3s;">
+            
             <!-- Google Drive Link -->
-            <a href="https://drive.google.com/drive/folders/1NM3RUOZfid80iBjrjAlAl9eDpwXb8X7E?usp=drive_link" target="_blank" class="flex items-center justify-center gap-3 bg-white border border-slate-200 hover:border-newsAccent hover:bg-amber-50 text-slate-600 hover:text-newsAccent px-8 py-5 rounded-3xl font-bold transition-all shadow-md group max-w-sm w-full">
-                <i class="ph-bold ph-google-drive-logo text-3xl transition-transform group-hover:scale-110"></i>
-                <div class="text-left">
-                    <span class="block text-xs font-medium text-slate-400 uppercase tracking-tighter">Photo Archive</span>
-                    <span class="block text-base">คลังไฟล์ภาพปกข่าว (Drive)</span>
+            <a href="https://drive.google.com/drive/folders/1NM3RUOZfid80iBjrjAlAl9eDpwXb8X7E?usp=drive_link" target="_blank" class="flex items-center gap-4 bg-white border border-slate-200 hover:border-newsAccent hover:bg-amber-50 text-slate-600 hover:text-newsAccent p-4 rounded-3xl font-bold transition-all shadow-md group">
+                <div class="w-14 h-14 bg-slate-50 group-hover:bg-white rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 border border-slate-100">
+                    <i class="ph-fill ph-google-drive-logo text-3xl"></i>
                 </div>
+                <div class="text-left flex-grow">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-newsAccent/70 transition-colors">Photo Archive</span>
+                    <span class="block text-sm sm:text-base leading-tight mt-0.5">คลังไฟล์ภาพปกข่าว</span>
+                </div>
+                <i class="ph-bold ph-arrow-up-right text-lg text-slate-300 group-hover:text-newsAccent transition-colors"></i>
             </a>
+
+            <!-- Line Add Friend Link -->
+            <!-- หมายเหตุ: กรุณาเปลี่ยน href ด้านล่างเป็นลิงก์ Add Friend ของ LINE ตัวเอง เช่น https://line.me/ti/p/~YOUR_LINE_ID หรือ https://lin.ee/xxxxxxx -->
+            <a href="https://lin.ee/RT1OWDO" target="_blank" class="flex items-center gap-4 bg-white border border-slate-200 hover:border-lineGreen hover:bg-[#F2FCF2] text-slate-600 hover:text-lineGreen p-4 rounded-3xl font-bold transition-all shadow-md group">
+                <div class="w-14 h-14 bg-slate-50 group-hover:bg-white rounded-xl overflow-hidden flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 border border-slate-100 relative">
+                    <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiEK_FnjOH0LjQtAI8SOUaO52c3AF-juUn0Q1YsFRPr8jgUATTQ8tD6RWWUlKQ4kzDXnSsD6Jxt5eZflT2UCaO6DByj-IvFJ35mygvbE7Yt8L-e0qvcPSVWlyIEUrM0XBsZlC-dhml_152JxgX3ar5bMyNqaAhaxE-uxzUkWC5qw85ltlf56gPDyINELuI/s320/Qr%20line.png" alt="QR Line CM108" class="w-full h-full object-cover absolute inset-0 mix-blend-multiply">
+                </div>
+                <div class="text-left flex-grow">
+                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-lineGreen/70 transition-colors">CM108 LINE BOT</span>
+                    <span class="block text-sm sm:text-base leading-tight mt-0.5">สร้างปกข่าว 3 บรรทัด</span>
+                </div>
+                <i class="ph-bold ph-chat-circle-text text-xl text-slate-300 group-hover:text-lineGreen transition-colors"></i>
+            </a>
+
         </div>
 
         <!-- Footer -->
