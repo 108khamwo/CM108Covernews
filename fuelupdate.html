@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสร้างรูปแจ้งปรับราคาน้ำมัน</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- เพิ่มฟอนต์ Prompt เข้ามาใช้งานร่วมกับ Kanit -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ดึงฟอนต์ Cloud ทั้งแบบตัวธรรมดาและตัวหนา */
+        @font-face {
+            font-family: 'Cloud';
+            src: url('https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Cloud/Cloud-Light.woff2') format('woff2'),
+                 url('https://rawcdn.githack.com/lazywasabi/thai-web-fonts/master/fonts/Cloud/Cloud-Light.ttf') format('truetype');
+            font-weight: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Cloud';
+            src: url('https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Cloud/Cloud-Bold.woff2') format('woff2'),
+                 url('https://rawcdn.githack.com/lazywasabi/thai-web-fonts/master/fonts/Cloud/Cloud-Bold.ttf') format('truetype');
+            font-weight: bold;
+            font-display: swap;
+        }
+
+        /* บังคับให้หน้าเว็บทั้งหมดใช้ฟอนต์ Cloud เพื่อให้มือถือยอมดาวน์โหลดฟอนต์ตั้งแต่เปิดเว็บ */
+        body { font-family: 'Cloud', 'Kanit', sans-serif; }
+        
+        /* ซ่อนลูกศรใน input type number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        .fuel-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .fuel-card:focus-within {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-10">
+
+    <!-- Header -->
+    <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
+        <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน</h1>
+    </div>
+
+    <div class="max-w-xl mx-auto mt-6 px-4">
+        
+        <!-- ส่วนกรอกข้อมูล -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6">
+            
+            <!-- ส่วนอัปโหลดรูปต้นฉบับ -->
+            <div class="mb-6 bg-orange-50 p-4 rounded-lg border border-orange-200">
+                <label class="block text-orange-800 font-bold mb-2">อัปโหลดภาพต้นฉบับ (หากภาพไม่ขึ้น)</label>
+                <div class="text-xs text-gray-600 mb-2">ระบบพยายามดึงภาพอัตโนมัติ หากกดสร้างรูปไม่ได้ ให้อัปโหลดภาพต้นฉบับเองที่นี่ครับ</div>
+                <input type="file" id="imageUpload" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-600 file:text-white hover:file:bg-orange-700">
+            </div>
+
+            <!-- วันที่และเวลา -->
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2 text-lg" style="font-family: 'Prompt', sans-serif;">วันที่และเวลา (ข้อความด้านบน)</label>
+                <input type="text" id="dateTimeText" value="มีผล 21 มีนาคม 2569 เวลา 05.00 น." 
+                    oninput="saveData()" style="font-family: 'Prompt', sans-serif;"
+                    class="w-full bg-blue-50 border border-blue-200 text-blue-800 text-center font-bold rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <hr class="mb-6 border-gray-200">
+            
+            <!-- หัวข้อราคาน้ำมัน + ปุ่มดึงข้อมูล -->
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-gray-700 font-bold text-lg">กรอกราคาน้ำมัน (บาท/ลิตร)</h2>
+                <button id="fetchPriceBtn" onclick="fetchChiangMaiPrices()" class="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+                    ดึงราคาน้ำมันปัจจุบัน
+                </button>
+            </div>
+
+            <!-- รายการน้ำมัน -->
+            <div id="fuelInputs" class="space-y-4">
+                <!-- ข้อมูลจะถูกสร้างด้วย JavaScript -->
+            </div>
+
+            <!-- ปุ่มสร้างรูป -->
+            <button id="generateBtn" onclick="generatePreview()" 
+                class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-lg transition duration-200 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a10 10 0 1 0 20 0 10 10 0 1 0-20 0"/><circle cx="12" cy="12" r="3"/><path d="M4.93 4.93l1.41 1.41"/><path d="M19.07 19.07l-1.41-1.41"/><path d="M14.83 9.17l5.66-5.66"/><path d="M14.83 14.83l5.66 5.66"/><path d="M9.17 14.83l-5.66 5.66"/><path d="M9.17 9.17l-5.66-5.66"/></svg> สร้างรูปภาพ / ดูตัวอย่าง
+            </button>
+        </div>
+
+        <!-- ส่วนแสดงผลรูปภาพ (ซ่อนไว้ก่อน) -->
+        <div id="previewSection" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-[fadeIn_0.5s_ease-out]">
+            <h2 class="text-gray-800 font-bold mb-4 text-lg text-center">ตัวอย่างรูปภาพ</h2>
+            
+            <div class="relative w-full rounded-lg overflow-hidden border-2 border-gray-300 shadow-inner bg-gray-100 flex justify-center">
+                <!-- Canvas สำหรับวาดรูป -->
+                <canvas id="canvas" class="max-w-full h-auto"></canvas>
+            </div>
+
+            <button onclick="downloadImage()" 
+                class="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-lg transition duration-200 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                บันทึกรูปภาพ (JPG)
+            </button>
+        </div>
+
+    </div>
+
+    <!-- โหลดรูปต้นฉบับซ่อนไว้ -->
+    <img id="baseImage" crossorigin="anonymous" 
+         src="https://wsrv.nl/?url=blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi0rhO9-jvlWwGxHIlg6H_keJTaRdK99TQtzwy3HilUTwjrwli7q748TDOBOJRSodeHede-RXBbP3-Dd5nJyH6bWLZJEYijZS_E9KxWDhovTc3YxgUF_vE3AzM_cWnx3hyphenhyphenka0SeaCsgp6j6_ksxxwkFfob1HdGbF7Zdp5jT0lloB9wzRxHxWzfUC86itg8/s1200/Oil%20New%20No%20Premium.jpg" 
+         class="hidden">
+
+    <script>
+        // --- ตั้งค่าตำแหน่งแกน X (แนวนอน) สำหรับคอลัมน์ต่างๆ ---
+        const posX = {
+            oldPrice: 0.455, 
+            newPrice: 0.655,
+            diff:     0.855 
+        };
+
+        // --- ตั้งค่าข้อมูลชนิดน้ำมันและตำแหน่งแกน Y (แนวตั้ง) ---
+        const fuels = [
+            { id: 'diesel', name: 'ดีเซล', color: 'bg-blue-800', yPos: 0.355 },
+            { id: 'e85', name: 'แก๊สโซฮอล์ E85', color: 'bg-red-600', yPos: 0.440 },
+            { id: 'e20', name: 'แก๊สโซฮอล์ E20', color: 'bg-orange-500', yPos: 0.518 },
+            { id: 'g95', name: 'แก๊สโซฮอล์ 95', color: 'bg-yellow-500', yPos: 0.598 },
+            { id: 'g91', name: 'แก๊สโซฮอล์ 91', color: 'bg-teal-500', yPos: 0.678 }
+        ];
+
+        // สร้าง Input Fields อัตโนมัติ
+        const fuelInputsContainer = document.getElementById('fuelInputs');
+        
+        fuels.forEach(fuel => {
+            const card = document.createElement('div');
+            card.className = `fuel-card bg-white border border-gray-200 rounded-xl p-4`;
+            card.innerHTML = `
+                <div class="flex items-center mb-3">
+                    <div class="w-4 h-4 rounded-full ${fuel.color} mr-2"></div>
+                    <span class="font-bold text-gray-800 text-lg">${fuel.name}</span>
+                </div>
+                <div class="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 items-end">
+                    <div>
+                        <label class="block text-[10px] text-gray-500 mb-1 text-center font-bold">ราคาเดิม</label>
+                        <input type="number" id="old_${fuel.id}" step="0.01" inputmode="decimal" placeholder="0.00"
+                            class="w-full bg-gray-50 border border-gray-300 text-center font-bold text-gray-800 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                            oninput="calculateDiff('${fuel.id}')"
+                            onblur="formatPriceOnBlur('${fuel.id}', 'old')">
+                    </div>
+                    <div class="pb-1.5">
+                        <button onclick="swapPrices('${fuel.id}')" class="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors" title="สลับราคาเดิม-ราคาใหม่">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 8 4 4-4 4"/><path d="M2 12h20"/><path d="m6 8-4 4 4 4"/></svg>
+                        </button>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-blue-500 mb-1 text-center font-bold">ราคาใหม่</label>
+                        <input type="number" id="new_${fuel.id}" step="0.01" inputmode="decimal" placeholder="0.00"
+                            class="w-full bg-blue-50 border border-blue-400 text-center font-bold text-blue-700 rounded-lg p-2 outline-none focus:ring-2 focus:ring-blue-500"
+                            oninput="calculateDiff('${fuel.id}')"
+                            onblur="formatPriceOnBlur('${fuel.id}', 'new')">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 mb-1 text-center font-bold">ส่วนต่าง</label>
+                        <input type="text" id="diff_${fuel.id}" placeholder="-"
+                            class="w-full bg-gray-100 border border-gray-200 text-center font-bold rounded-lg p-2 outline-none"
+                            oninput="handleDiffInput('${fuel.id}')"
+                            onblur="formatDiffOnBlur('${fuel.id}')">
+                    </div>
+                </div>
+            `;
+            fuelInputsContainer.appendChild(card);
+        });
+
+        // ฟังก์ชันตั้งค่าวันที่เป็นวันพรุ่งนี้อัตโนมัติ
+        function setTomorrowDate() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1); // +1 วัน
+            
+            const thaiMonths = [
+                "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", 
+                "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+            ];
+            
+            const d = tomorrow.getDate();
+            const m = thaiMonths[tomorrow.getMonth()];
+            const y = tomorrow.getFullYear() + 543; // แปลงเป็น พ.ศ.
+            
+            document.getElementById('dateTimeText').value = `มีผล ${d} ${m} ${y} เวลา 05.00 น.`;
+        }
+
+        // ฟังก์ชันดึงข้อมูลราคาน้ำมัน PTT (อ.เมืองเชียงใหม่)
+        async function fetchChiangMaiPrices() {
+            const btn = document.getElementById('fetchPriceBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูล...`;
+            btn.disabled = true;
+
+            try {
+                let response;
+                const targetUrl = 'https://api.chnwt.dev/thai-oil-api/latest';
+                
+                try {
+                    response = await fetch(targetUrl);
+                } catch(e) {
+                    response = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl));
+                }
+                
+                if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลน้ำมันได้');
+                const data = await response.json();
+                
+                const ptt = data?.response?.stations?.ptt || data?.stations?.ptt || data?.ptt || {};
+                const cmOffset = 0.7; // พื้นที่ อ.เมืองเชียงใหม่ (+0.7 บาท)
+
+                const findStandardPrice = (keys) => {
+                    for (let key of keys) {
+                        let val = ptt[key];
+                        if (val !== undefined && val !== null) {
+                            let num = typeof val === 'object' && val.price !== undefined ? parseFloat(val.price) : parseFloat(val);
+                            if (!isNaN(num)) return num + cmOffset;
+                        }
+                    }
+                    return null;
+                };
+
+                const getStandardDieselPrice = () => {
+                    return findStandardPrice(['premium_diesel', 'diesel', 'ดีเซล']);
+                };
+
+                const priceMap = {
+                    'diesel': getStandardDieselPrice(),
+                    'e85': findStandardPrice(['gasohol_e85', 'gasoholE85', 'e85', 'แก๊สโซฮอล์ E85']),
+                    'e20': findStandardPrice(['gasohol_e20', 'gasoholE20', 'e20', 'แก๊สโซฮอล์ E20']),
+                    'g95': findStandardPrice(['gasohol_95', 'gasohol95', 'e10_95', 'แก๊สโซฮอล์ 95']),
+                    'g91': findStandardPrice(['gasohol_91', 'gasohol91', 'e10_91', 'แก๊สโซฮอล์ 91'])
+                };
+
+                let updatedCount = 0;
+                fuels.forEach(fuel => {
+                    let priceValue = priceMap[fuel.id];
+                    if (priceValue !== null && priceValue !== undefined) {
+                        document.getElementById(`old_${fuel.id}`).value = priceValue.toFixed(2);
+                        calculateDiff(fuel.id, true);
+                        updatedCount++;
+                    }
+                });
+                
+                saveData();
+                
+                if (updatedCount > 0) {
+                    alert('ดึงข้อมูลราคาน้ำมันปัจจุบัน (+0.7 บาท อ.เมืองเชียงใหม่) สำเร็จ!');
+                } else {
+                    alert('ดึงข้อมูลได้ แต่ไม่พบราคาน้ำมันมาตรฐานในฐานข้อมูล กรุณากรอกเองชั่วคราวครับ');
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                alert('ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้ในขณะนี้: ' + error.message + '\nกรุณากรอกราคาเดิมด้วยตนเองครับ');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function swapPrices(id) {
+            const oldInput = document.getElementById(`old_${id}`);
+            const newInput = document.getElementById(`new_${id}`);
+            const temp = oldInput.value;
+            oldInput.value = newInput.value;
+            newInput.value = temp;
+            
+            // บังคับทศนิยมหลังสลับ
+            if(oldInput.value) oldInput.value = parseFloat(oldInput.value).toFixed(2);
+            if(newInput.value) newInput.value = parseFloat(newInput.value).toFixed(2);
+            
+            calculateDiff(id);
+        }
+
+        function checkDiffFontSize(id) {
+            const input = document.getElementById(`diff_${id}`);
+            const valStr = input.value.replace(/[+\u200A]/g, '').trim();
+            const num = parseFloat(valStr);
+            // บังคับลดขนาดตัวหนังสือในช่องกรอกหากค่า >= 10
+            if (!isNaN(num) && Math.abs(num) >= 10) {
+                input.style.fontSize = "13px";
+            } else {
+                input.style.fontSize = ""; 
+            }
+        }
+
+        function formatPriceOnBlur(id, type) {
+            const input = document.getElementById(`${type}_${id}`);
+            let val = parseFloat(input.value);
+            if (!isNaN(val)) {
+                input.value = val.toFixed(2);
+            }
+            calculateDiff(id);
+        }
+
+        function formatDiffOnBlur(id) {
+            const diffInput = document.getElementById(`diff_${id}`);
+            let val = diffInput.value;
+            let cleanVal = val.replace(/[^\d.-]/g, '');
+            if (cleanVal === "" || isNaN(parseFloat(cleanVal))) {
+                diffInput.value = "-";
+                diffInput.className = "w-full bg-gray-100 border border-gray-200 text-center font-bold rounded-lg p-2 outline-none";
+                checkDiffFontSize(id);
+                return;
+            }
+            let num = parseFloat(cleanVal);
+            if (num === 0) {
+                diffInput.value = "-";
+                diffInput.className = "w-full bg-gray-100 border border-gray-200 text-center font-bold rounded-lg p-2 outline-none";
+            } else {
+                const prefix = num > 0 ? "+" : "";
+                diffInput.value = prefix + num.toFixed(2);
+            }
+            checkDiffFontSize(id);
+        }
+
+        function handleDiffInput(id) {
+            const diffInput = document.getElementById(`diff_${id}`);
+            const oldVal = parseFloat(document.getElementById(`old_${id}`).value);
+            const newVal = parseFloat(document.getElementById(`new_${id}`).value);
+            let val = diffInput.value;
+            if (val !== "" && /^[0-9.]/.test(val)) {
+                diffInput.value = "+" + val;
+                val = "+" + val;
+            }
+            let cleanVal = val.replace(/[^\d.-]/g, '');
+            if (cleanVal === "" || cleanVal === "-" || cleanVal === "+") {
+                diffInput.className = "w-full bg-gray-100 border border-gray-200 text-center font-bold rounded-lg p-2 outline-none";
+                checkDiffFontSize(id);
+                return;
+            }
+            let diffNum = parseFloat(cleanVal);
+            if (!isNaN(diffNum)) {
+                if (!isNaN(oldVal)) {
+                    const calculatedNew = oldVal + diffNum;
+                    document.getElementById(`new_${id}`).value = calculatedNew.toFixed(2);
+                } else if (!isNaN(newVal)) {
+                    const calculatedOld = newVal - diffNum;
+                    document.getElementById(`old_${id}`).value = calculatedOld.toFixed(2);
+                }
+                if (diffNum > 0) {
+                    diffInput.className = "w-full bg-red-50 border border-red-300 text-center font-bold text-red-600 rounded-lg p-2 outline-none";
+                } else if (diffNum < 0) {
+                    diffInput.className = "w-full bg-green-50 border border-green-300 text-center font-bold text-green-500 rounded-lg p-2 outline-none";
+                } else {
+                    diffInput.className = "w-full bg-gray-100 border border-gray-300 text-center font-bold text-gray-600 rounded-lg p-2 outline-none";
+                }
+            }
+            checkDiffFontSize(id);
+            saveData();
+        }
+
+        function calculateDiff(id, skipSave = false) {
+            const oldValInput = document.getElementById(`old_${id}`);
+            const newValInput = document.getElementById(`new_${id}`);
+            const oldVal = parseFloat(oldValInput.value);
+            const newVal = parseFloat(newValInput.value);
+            const diffInput = document.getElementById(`diff_${id}`);
+
+            if (!isNaN(oldVal) && !isNaN(newVal)) {
+                const diff = newVal - oldVal;
+                let formattedDiff = Math.abs(diff).toFixed(2); 
+                if (diff > 0) {
+                    diffInput.value = "+\u200A" + formattedDiff;
+                    diffInput.className = "w-full bg-red-50 border border-red-300 text-center font-bold text-red-600 rounded-lg p-2 outline-none";
+                } else if (diff < 0) {
+                    diffInput.value = "-\u200A" + formattedDiff;
+                    diffInput.className = "w-full bg-green-50 border border-green-300 text-center font-bold text-green-500 rounded-lg p-2 outline-none";
+                } else {
+                    diffInput.value = "-"; 
+                    diffInput.className = "w-full bg-gray-100 border border-gray-300 text-center font-bold text-gray-600 rounded-lg p-2 outline-none";
+                }
+            } else {
+                diffInput.value = "";
+                diffInput.className = "w-full bg-gray-100 border border-gray-200 text-center font-bold rounded-lg p-2 outline-none";
+            }
+            checkDiffFontSize(id);
+            if (!skipSave) saveData(); 
+        }
+
+        function saveData() {
+            const data = { fuels: {} };
+            fuels.forEach(fuel => {
+                data.fuels[fuel.id] = {
+                    old: document.getElementById(`old_${fuel.id}`).value,
+                    new: document.getElementById(`new_${fuel.id}`).value
+                };
+            });
+            localStorage.setItem('oilPriceData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('oilPriceData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.fuels) {
+                        fuels.forEach(fuel => {
+                            if (data.fuels[fuel.id]) {
+                                document.getElementById(`old_${fuel.id}`).value = data.fuels[fuel.id].old || '';
+                                document.getElementById(`new_${fuel.id}`).value = data.fuels[fuel.id].new || '';
+                                calculateDiff(fuel.id, true); 
+                            }
+                        });
+                    }
+                }
+            } catch (e) { console.warn('Error loading data', e); }
+        }
+
+        function setupEnterNavigation() {
+            const inputs = Array.from(document.querySelectorAll('input[type="text"]:not([readonly]), input[type="number"]'));
+            inputs.forEach((input, index) => {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        const nextInput = inputs[index + 1];
+                        if (nextInput) { nextInput.focus(); nextInput.select(); }
+                        else { if (!document.getElementById('generateBtn').disabled) generatePreview(); }
+                    }
+                });
+            });
+        }
+
+        async function generatePreview() {
+            try {
+                await document.fonts.ready;
+                const baseImg = document.getElementById('baseImage');
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!baseImg.complete || baseImg.naturalWidth === 0) { alert('ภาพต้นฉบับยังโหลดไม่สำเร็จ'); return; }
+
+                const width = baseImg.naturalWidth;
+                const height = baseImg.naturalHeight;
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(baseImg, 0, 0, width, height);
+
+                const dateText = document.getElementById('dateTimeText').value;
+                const dateY = height * 0.126;
+                const dateX = (width / 2) + (width * 0.080);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = `600 ${width * 0.045}px "Prompt", sans-serif`; 
+                ctx.fillStyle = "#ffffff";
+                ctx.shadowColor = "rgba(0, 0, 0, 1)";
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 4;
+                ctx.shadowOffsetY = 2; 
+                ctx.fillText(dateText, dateX, dateY);
+                ctx.fillText(dateText, dateX, dateY);
+                ctx.shadowColor = "transparent";
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                const colOldX = width * posX.oldPrice;
+                const colNewX = width * posX.newPrice;
+                const colDiffX = width * posX.diff;
+                const priceFontSize = (width * 0.055) + 6;
+
+                fuels.forEach(fuel => {
+                    const oldVal = document.getElementById(`old_${fuel.id}`).value;
+                    const newVal = document.getElementById(`new_${fuel.id}`).value;
+                    const diffVal = document.getElementById(`diff_${fuel.id}`).value;
+                    const cleanDiff = diffVal.replace(/[+\u200A]/g, '').trim();
+                    const diffNum = parseFloat(cleanDiff);
+                    const yPos = height * fuel.yPos;
+
+                    // บังคับย่อขนาดตัวหนังสือใน Canvas ลง 2px หากค่าส่วนต่าง >= 10.00
+                    let drawFontSize = priceFontSize;
+                    if (!isNaN(diffNum) && Math.abs(diffNum) >= 10) {
+                        drawFontSize = priceFontSize - 4; // ปรับลงเพื่อให้เห็นผลชัดเจน (เทียบเท่าประมาณ 2px ในหน่วย UI)
+                    }
+
+                    if(oldVal) {
+                        ctx.font = `bold ${priceFontSize}px "Cloud", sans-serif`;
+                        ctx.fillStyle = "#000000";
+                        ctx.fillText(parseFloat(oldVal).toFixed(2), colOldX, yPos);
+                    }
+                    if(newVal) {
+                        ctx.font = `bold ${priceFontSize}px "Cloud", sans-serif`;
+                        ctx.fillStyle = "#000000";
+                        ctx.fillText(parseFloat(newVal).toFixed(2), colNewX, yPos);
+                    }
+                    if(diffVal && diffVal !== "-") {
+                        ctx.font = `bold ${drawFontSize}px "Cloud", sans-serif`;
+                        let cleanDisplay = diffVal.replace(/\u200A/g, ''); 
+                        if(cleanDisplay.includes('+')) ctx.fillStyle = "#ff0000";
+                        else if (cleanDisplay.includes('-')) ctx.fillStyle = "#00ff00";
+                        else ctx.fillStyle = "#ffffff";
+                        ctx.lineWidth = width * 0.004;
+                        ctx.strokeStyle = "#000000";
+                        ctx.strokeText(cleanDisplay, colDiffX, yPos);
+                        ctx.fillText(cleanDisplay, colDiffX, yPos);
+                    } else if (diffVal === "-") {
+                        ctx.font = `bold ${priceFontSize}px "Cloud", sans-serif`;
+                        ctx.fillStyle = "#ffffff";
+                        ctx.lineWidth = width * 0.004;
+                        ctx.strokeStyle = "#000000";
+                        ctx.strokeText("-", colDiffX, yPos);
+                        ctx.fillText("-", colDiffX, yPos);
+                    }
+                });
+
+                const previewSection = document.getElementById('previewSection');
+                previewSection.classList.remove('hidden');
+                previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (error) { console.warn(error); alert("เกิดข้อผิดพลาดในการสร้างรูปภาพ"); }
+        }
+
+        function downloadImage() {
+            try {
+                const canvas = document.getElementById('canvas');
+                const dataURL = canvas.toDataURL('image/jpeg', 1.0);
+                const link = document.createElement('a');
+                const dateStr = new Date().toISOString().slice(0,10);
+                link.download = `oil-price-${dateStr}.jpg`;
+                link.href = dataURL;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) { alert("เกิดข้อผิดพลาดในการบันทึกภาพ"); }
+        }
+
+        window.onload = () => {
+            setTomorrowDate(); 
+            loadData();             
+            setupEnterNavigation(); 
+            document.getElementById('imageUpload').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const baseImg = document.getElementById('baseImage');
+                        baseImg.onload = function() { alert('อัปโหลดภาพสำเร็จ!'); };
+                        baseImg.removeAttribute('crossorigin'); 
+                        baseImg.src = event.target.result;
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
