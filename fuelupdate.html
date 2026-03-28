@@ -283,13 +283,15 @@
             calculateDiff(id);
         }
 
+        // ฟังก์ชันช่วยปรับขนาดตัวหนังสือในช่องกรอก (แก้ไขเพื่อให้รองรับมือถือ)
         function checkDiffFontSize(id) {
             const input = document.getElementById(`diff_${id}`);
-            const valStr = input.value.replace(/[+\u200A]/g, '').trim();
-            const num = parseFloat(valStr);
-            // บังคับลดขนาดตัวหนังสือในช่องกรอกหากค่า >= 10
-            if (!isNaN(num) && Math.abs(num) >= 10) {
-                input.style.fontSize = "13px";
+            // ใช้ Regex ดึงเฉพาะตัวเลขและจุดเพื่อเช็คค่าจริง
+            const cleanNum = parseFloat(input.value.replace(/[^\d.-]/g, ''));
+            
+            if (!isNaN(cleanNum) && Math.abs(cleanNum) >= 10) {
+                // บังคับใช้ !important เพื่อให้มือถือยอมย่อฟอนต์
+                input.style.setProperty('font-size', '14px', 'important');
             } else {
                 input.style.fontSize = ""; 
             }
@@ -473,14 +475,15 @@
                     const oldVal = document.getElementById(`old_${fuel.id}`).value;
                     const newVal = document.getElementById(`new_${fuel.id}`).value;
                     const diffVal = document.getElementById(`diff_${fuel.id}`).value;
-                    const cleanDiff = diffVal.replace(/[+\u200A]/g, '').trim();
+                    // ดึงเฉพาะตัวเลขมาเช็คเพื่อย่อขนาดใน Canvas
+                    const cleanDiff = diffVal.replace(/[^\d.-]/g, '').trim();
                     const diffNum = parseFloat(cleanDiff);
                     const yPos = height * fuel.yPos;
 
-                    // บังคับย่อขนาดตัวหนังสือใน Canvas ลง 2px หากค่าส่วนต่าง >= 10.00
+                    // บังคับย่อขนาดตัวหนังสือใน Canvas ลงหากค่าส่วนต่าง >= 10.00
                     let drawFontSize = priceFontSize;
                     if (!isNaN(diffNum) && Math.abs(diffNum) >= 10) {
-                        drawFontSize = priceFontSize - 4; // ปรับลงเพื่อให้เห็นผลชัดเจน (เทียบเท่าประมาณ 2px ในหน่วย UI)
+                        drawFontSize = priceFontSize - 8; // ย่อขนาดในรูปให้เห็นชัดเจน
                     }
 
                     if(oldVal) {
