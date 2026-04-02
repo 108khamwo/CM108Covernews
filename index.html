@@ -57,11 +57,11 @@
                     <i class="ph-fill ph-newspaper-clipping text-white text-3xl"></i>
                 </div>
                 <div class="text-left ml-4 pr-4">
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-newsBlue block">Creative Tools</span>
-                    <h1 class="text-2xl font-black text-newsDark leading-none">CM108 <span class="text-newsBlue">NEWS COVER</span></h1>
+                    <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-newsBlue block">Creative Tools</span>
+                    <h1 class="text-2xl font-bold text-newsDark leading-none">CM108 <span class="text-newsBlue">NEWS COVER</span></h1>
                 </div>
             </div>
-            <p class="text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
+            <p class="text-slate-500 font-normal max-w-md mx-auto leading-relaxed">
                 ระบบจัดการภาพปกข่าวอัตโนมัติ ออกแบบมาเพื่อความรวดเร็วและสวยงามระดับมืออาชีพ
             </p>
         </header>
@@ -70,7 +70,7 @@
         <section class="space-y-4 animate-fade-in mb-8" style="animation-delay: 0.1s;">
             <div class="flex items-center gap-2 px-2">
                 <div class="w-2 h-6 bg-rose-500 rounded-full"></div>
-                <h2 class="font-black text-newsDark text-lg uppercase tracking-tight">ระบบราคาน้ำมัน (Quick Tools)</h2>
+                <h2 class="font-bold text-newsDark text-lg uppercase tracking-tight">ระบบราคาน้ำมัน (Quick Tools)</h2>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
@@ -80,7 +80,10 @@
                         <i class="ph-fill ph-paint-brush-broad text-3xl text-white"></i>
                     </div>
                     <div class="flex-grow">
-                        <h3 class="font-black text-slate-800 group-hover:text-blue-600 transition-colors">แจ้งปรับน้ำมัน (Canva)</h3>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">แจ้งปรับน้ำมัน (Canva)</h3>
+                            <span class="bg-blue-100 text-blue-600 text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tighter">อัปเดทล่าสุด</span>
+                        </div>
                         <p class="text-xs text-slate-500">ปรับแต่งผ่านเทมเพลต Canva</p>
                     </div>
                     <i class="ph-bold ph-arrow-up-right text-slate-300 group-hover:text-blue-500"></i>
@@ -93,14 +96,39 @@
                     </div>
                     <div class="flex-grow">
                         <div class="flex items-center gap-2">
-                            <h3 class="font-black text-slate-800 group-hover:text-rose-600 transition-colors">แจ้งปรับน้ำมัน (Auto)</h3>
-                            <span class="bg-rose-100 text-rose-600 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter">Fast</span>
+                            <h3 class="font-bold text-slate-800 group-hover:text-rose-600 transition-colors">แจ้งปรับน้ำมัน (Auto)</h3>
+                            <span class="bg-rose-100 text-rose-600 text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-tighter">อัปเดทล่าสุด</span>
                         </div>
                         <p class="text-xs text-slate-500">สร้างภาพอัตโนมัติในที่เดียว</p>
                     </div>
                     <i class="ph-bold ph-arrow-right text-slate-300 group-hover:text-rose-500"></i>
                 </a>
 
+            </div>
+        </section>
+
+        <!-- NEW SECTION: Air Quality System -->
+        <section class="space-y-4 animate-fade-in mb-8" style="animation-delay: 0.15s;">
+            <div class="flex items-center gap-2 px-2">
+                <div class="w-2 h-6 bg-amber-500 rounded-full"></div>
+                <h2 class="font-bold text-newsDark text-lg uppercase tracking-tight">ระบบฝุ่น PM 2.5 (Air Quality)</h2>
+            </div>
+            <div class="grid grid-cols-1 gap-4">
+                <a href="https://108khamwo.github.io/AirQRCM108/" target="_blank" class="group bg-white p-6 rounded-[2rem] border-2 border-amber-100 hover:border-amber-500 shadow-xl shadow-amber-500/5 hover:shadow-amber-500/10 transition-all flex items-center gap-6">
+                    <div class="w-20 h-20 bg-amber-500 rounded-3xl flex items-center justify-center shadow-lg shadow-amber-500/30 group-hover:scale-105 transition-transform flex-shrink-0">
+                        <i class="ph-fill ph-wind text-4xl text-white"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <div class="flex items-center gap-3 mb-1">
+                            <h3 class="font-bold text-xl text-slate-800 group-hover:text-amber-600 transition-colors">ระบบรายงานฝุ่น 25 อำเภอเชียงใหม่</h3>
+                            <span class="bg-amber-100 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest hidden sm:inline-block">Real-time</span>
+                        </div>
+                        <p class="text-sm text-slate-500 font-normal leading-relaxed text-balance">สร้างกราฟิกรายงานค่าฝุ่นและดัชนีคุณภาพอากาศครอบคลุมทั้ง 25 อำเภอ</p>
+                    </div>
+                    <div class="hidden sm:flex w-12 h-12 rounded-full bg-slate-50 items-center justify-center group-hover:bg-amber-50 transition-colors flex-shrink-0">
+                        <i class="ph-bold ph-arrow-up-right text-slate-300 group-hover:text-amber-500"></i>
+                    </div>
+                </a>
             </div>
         </section>
 
@@ -119,14 +147,14 @@
                     
                     <!-- Text Content -->
                     <div class="text-center md:text-left flex-grow">
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-lineGreen/10 text-lineGreen rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">
+                        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-lineGreen/10 text-lineGreen rounded-full text-[10px] font-semibold uppercase tracking-widest mb-3">
                             <i class="ph-fill ph-star"></i> ระบบแนะนำ (ใหม่ล่าสุด)
                         </div>
-                        <h2 class="text-3xl md:text-4xl font-black text-slate-800 mb-2 group-hover:text-lineGreen transition-colors tracking-tight">CM108 LINE BOT</h2>
-                        <p class="text-base md:text-lg text-slate-500 font-medium mb-6">สร้างปกข่าว 3 บรรทัด รวดเร็วและจบในที่เดียว<br class="hidden md:block">เพียงเพิ่มเพื่อนและพิมพ์ข้อความผ่านแอป LINE</p>
+                        <h2 class="text-3xl md:text-4xl font-bold text-slate-800 mb-2 group-hover:text-lineGreen transition-colors tracking-tight">CM108 LINE BOT</h2>
+                        <p class="text-base md:text-lg text-slate-500 font-normal mb-6">สร้างปกข่าว 3 บรรทัด รวดเร็วและจบในที่เดียว<br class="hidden md:block">เพียงเพิ่มเพื่อนและพิมพ์ข้อความผ่านแอป LINE</p>
                         
                         <!-- CTA Button -->
-                        <span class="inline-flex items-center gap-2 bg-lineGreen text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-green-500/30 group-hover:bg-[#009900] group-hover:-translate-y-1 transition-all">
+                        <span class="inline-flex items-center gap-2 bg-lineGreen text-white px-6 py-3 rounded-2xl font-semibold shadow-lg shadow-green-500/30 group-hover:bg-[#009900] group-hover:-translate-y-1 transition-all">
                             <i class="ph-bold ph-plus-circle text-xl"></i> แอดไลน์ใช้งานเลย
                         </span>
                     </div>
@@ -141,7 +169,7 @@
             <section class="space-y-4 animate-fade-in" style="animation-delay: 0.3s;">
                 <div class="flex items-center gap-2 px-2">
                     <div class="w-2 h-6 bg-slate-300 rounded-full"></div>
-                    <h2 class="font-black text-newsDark text-lg uppercase tracking-tight">ระบบ Original (ดั้งเดิม)</h2>
+                    <h2 class="font-bold text-newsDark text-lg uppercase tracking-tight">ระบบ Original (ดั้งเดิม)</h2>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
                     <!-- 1.1 Desktop -->
@@ -150,7 +178,7 @@
                             <i class="ph-bold ph-desktop text-3xl text-slate-400 group-hover:text-newsBlue"></i>
                         </div>
                         <div class="flex-grow">
-                            <h3 class="font-bold text-slate-800 group-hover:text-newsBlue transition-colors">Original Desktop</h3>
+                            <h3 class="font-semibold text-slate-800 group-hover:text-newsBlue transition-colors">Original Desktop</h3>
                             <p class="text-xs text-slate-500">สำหรับทำปกบนคอมพิวเตอร์ (Classic)</p>
                         </div>
                         <i class="ph-bold ph-arrow-right text-slate-300 group-hover:text-newsBlue group-hover:translate-x-1 transition-all"></i>
@@ -162,7 +190,7 @@
                             <i class="ph-bold ph-device-mobile text-3xl text-slate-400 group-hover:text-newsBlue"></i>
                         </div>
                         <div class="flex-grow">
-                            <h3 class="font-bold text-slate-800 group-hover:text-newsBlue transition-colors">Original Mobile</h3>
+                            <h3 class="font-semibold text-slate-800 group-hover:text-newsBlue transition-colors">Original Mobile</h3>
                             <p class="text-xs text-slate-500">เวอร์ชันพกพา ปรับแต่งง่ายในมือถือ</p>
                         </div>
                         <i class="ph-bold ph-arrow-right text-slate-300 group-hover:text-newsBlue group-hover:translate-x-1 transition-all"></i>
@@ -174,7 +202,7 @@
             <section class="space-y-4 animate-fade-in" style="animation-delay: 0.4s;">
                 <div class="flex items-center gap-2 px-2">
                     <div class="w-2 h-6 bg-newsBlue rounded-full"></div>
-                    <h2 class="font-black text-newsDark text-lg uppercase tracking-tight">ระบบ NEW GEN (รุ่นใหม่)</h2>
+                    <h2 class="font-bold text-newsDark text-lg uppercase tracking-tight">ระบบ NEW GEN (รุ่นใหม่)</h2>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
                     <!-- 2.1 NEW GEN 1:1 -->
@@ -184,8 +212,8 @@
                         </div>
                         <div class="flex-grow text-white">
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold group-hover:text-newsBlue transition-colors">NEW GEN 1:1</h3>
-                                <span class="bg-newsBlue/20 text-newsBlue text-[9px] font-bold px-1.5 py-0.5 rounded">No Banner</span>
+                                <h3 class="font-semibold group-hover:text-newsBlue transition-colors">NEW GEN 1:1</h3>
+                                <span class="bg-newsBlue/20 text-newsBlue text-[9px] font-semibold px-1.5 py-0.5 rounded">No Banner</span>
                             </div>
                             <p class="text-xs text-slate-400">ขนาดสี่เหลี่ยมจตุรัส ดีไซน์โมเดิร์น</p>
                         </div>
@@ -199,8 +227,8 @@
                         </div>
                         <div class="flex-grow text-white">
                             <div class="flex items-center gap-2">
-                                <h3 class="font-bold group-hover:text-newsBlue transition-colors">NEW GEN 4:5</h3>
-                                <span class="bg-newsAccent/20 text-newsAccent text-[9px] font-bold px-1.5 py-0.5 rounded">Ads Enabled</span>
+                                <h3 class="font-semibold group-hover:text-newsBlue transition-colors">NEW GEN 4:5</h3>
+                                <span class="bg-newsAccent/20 text-newsAccent text-[9px] font-semibold px-1.5 py-0.5 rounded">Ads Enabled</span>
                             </div>
                             <p class="text-xs text-slate-400">ขนาดมาตรฐาน ใส่แบนเนอร์โฆษณาได้</p>
                         </div>
@@ -213,12 +241,12 @@
         <!-- Resources Section -->
         <div class="flex justify-center animate-fade-in" style="animation-delay: 0.5s;">
             <!-- Google Drive Link -->
-            <a href="https://drive.google.com/drive/folders/1NM3RUOZfid80iBjrjAlAl9eDpwXb8X7E?usp=drive_link" target="_blank" class="flex items-center gap-4 bg-white border border-slate-200 hover:border-newsAccent hover:bg-amber-50 text-slate-600 hover:text-newsAccent p-4 pr-6 rounded-3xl font-bold transition-all shadow-md group max-w-sm w-full">
+            <a href="https://drive.google.com/drive/folders/1NM3RUOZfid80iBjrjAlAl9eDpwXb8X7E?usp=drive_link" target="_blank" class="flex items-center gap-4 bg-white border border-slate-200 hover:border-newsAccent hover:bg-amber-50 text-slate-600 hover:text-newsAccent p-4 pr-6 rounded-3xl font-semibold transition-all shadow-md group max-w-sm w-full">
                 <div class="w-14 h-14 bg-slate-50 group-hover:bg-white rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105 border border-slate-100">
                     <i class="ph-fill ph-google-drive-logo text-3xl"></i>
                 </div>
                 <div class="text-left flex-grow">
-                    <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-newsAccent/70 transition-colors">Photo Archive</span>
+                    <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider group-hover:text-newsAccent/70 transition-colors">Photo Archive</span>
                     <span class="block text-sm sm:text-base leading-tight mt-0.5">คลังไฟล์ภาพปกข่าว</span>
                 </div>
                 <i class="ph-bold ph-arrow-up-right text-lg text-slate-300 group-hover:text-newsAccent transition-colors"></i>
@@ -227,7 +255,7 @@
 
         <!-- Footer -->
         <footer class="mt-16 text-center animate-fade-in" style="animation-delay: 0.6s;">
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">
+            <p class="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.3em]">
                 &copy; 2025 CM108 Creative Studio
             </p>
         </footer>
