@@ -484,8 +484,8 @@
                 // เช็คว่าเป็นอุปกรณ์ iOS (iPhone, iPad) หรือไม่
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 
-                // ปรับชดเชยแกน Y: ถ้าเป็น iOS ขยับตัวหนังสือ/ตัวเลขขึ้น 2px (ใส่ 2), ถ้าเป็นคอมพิวเตอร์ให้อยู่ที่เดิม (0)
-                const iosVerticalOffset = isIOS ? 2 : 0; 
+                // ปรับชดเชยแกน Y: ถ้าเป็น iOS ขยับตัวหนังสือ/ตัวเลขขึ้น 5px (ใส่ 5), ถ้าเป็นคอมพิวเตอร์ให้อยู่ที่เดิม (0)
+                const iosVerticalOffset = isIOS ? 5 : 0; 
 
                 // 1. วาดวันที่
                 const dateText = document.getElementById('dateTimeText').value;
