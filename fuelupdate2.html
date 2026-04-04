@@ -554,7 +554,7 @@
                             ctx.fillStyle = "#000000";
                         }
                         ctx.fillText(cleanDisplay, colDiffX, yPos); // วาดที่ตำแหน่งกลาง
-                    } else if (diffVal === "-") {
+                    } else if (diffVal === "-" || (oldVal && !diffVal)) {
                         ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
                         ctx.fillStyle = "#888888"; // สีเทาสำหรับไม่มีการเปลี่ยนแปลง
                         ctx.fillText("-", colDiffX, yPos); // วาดที่ตำแหน่งกลาง
@@ -574,6 +574,22 @@
                         ctx.fillText(parseFloat(newVal).toFixed(2), colNewX, yPos); // วาดที่ตำแหน่งขวา
                         
                         // เคลียร์ค่าเงากลับเป็นปกติ ป้องกันไม่ให้กระทบลูปถัดไป
+                        ctx.shadowColor = "transparent";
+                        ctx.shadowBlur = 0;
+                        ctx.shadowOffsetX = 0;
+                        ctx.shadowOffsetY = 0;
+                    } else if (oldVal) {
+                        ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
+                        ctx.fillStyle = "#ffffff"; 
+                        
+                        // เพิ่มเงาให้ขีด - เหมือนตัวเลขด้วย
+                        ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                        ctx.shadowBlur = 4;
+                        ctx.shadowOffsetX = 2;
+                        ctx.shadowOffsetY = 2;
+                        
+                        ctx.fillText("-", colNewX, yPos); // วาดขีดเมื่อเว้นช่องว่างไว้
+                        
                         ctx.shadowColor = "transparent";
                         ctx.shadowBlur = 0;
                         ctx.shadowOffsetX = 0;
