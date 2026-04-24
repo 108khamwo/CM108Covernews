@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Breaking News ข่าวด่วน</title>
+    
+    <!-- Google Fonts: Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f3f4f6; /* Light theme background */
+            color: #1f2937;
+            margin: 0;
+            padding: 0;
+            overscroll-behavior-y: none;
+        }
+        
+        /* Custom Scrollbar for sleek UI */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f3f4f6; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            background-color: #e5e7eb;
+            background-image: linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db), linear-gradient(45deg, #d1d5db 25%, transparent 25%, transparent 75%, #d1d5db 75%, #d1d5db);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // Icons Components (Inline SVG for self-containment)
+        const IconUpload = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>;
+        const IconSave = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
+        const IconPlus = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+        const IconMinus = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>;
+        const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>;
+
+        const PRESET_COLORS = [
+            { label: 'ขาว', hex: '#FFFFFF' },
+            { label: 'เหลือง', hex: '#FFFF00' },
+            { label: 'ฟ้าสว่าง', hex: '#4bfafc' },
+            { label: 'ส้ม', hex: '#FF9800' },
+            { label: 'เขียวสว่าง', hex: '#39FF14' },
+            { label: 'แดง', hex: '#FF3B30' },
+        ];
+
+        const App = () => {
+            // State
+            const [bgImage, setBgImage] = useState(null);
+            const [isFontLoaded, setIsFontLoaded] = useState(false);
+            const [renderTrigger, setRenderTrigger] = useState(0); // เพิ่ม Trigger กระตุ้นเรนเดอร์แก้ปัญหาฟอนต์
+            
+            // ใช้ Textarea เดียว พิมพ์ข้อความทั้งหมด
+            const defaultText = "ด่วน! ศาลฎีกา รับคำร้อง\nป.ป.ช. คดี 44 สส.ก้าวไกล\nแก้ ม.112 แต่ 10 สส.\nไม่ต้องหยุดปฏิบัติหน้าที่";
+            const [rawText, setRawText] = useState(defaultText);
+            
+            // เก็บการตั้งค่าแยกแต่ละบรรทัด (อ้างอิงตาม Index)
+            const [lineStyles, setLineStyles] = useState({
+                0: { size: 71, color: "#FFFFFF", isBold: true },
+                1: { size: 71, color: "#FFFFFF", isBold: true },
+                2: { size: 71, color: "#FFFFFF", isBold: true },
+                3: { size: 71, color: "#FFFFFF", isBold: true }
+            });
+            const [lineSpacing, setLineSpacing] = useState(25);
+            const [globalYOffset, setGlobalYOffset] = useState(-30);
+
+            const canvasRef = useRef(null);
+            const fileInputRef = useRef(null);
+
+            // 1. Wait for Font to load (แก้ปัญหาฟอนต์ผิดขนาดตอนโหลดครั้งแรก)
+            useEffect(() => {
+                const loadFonts = async () => {
+                    try {
+                        // บังคับโหลดน้ำหนักฟอนต์ที่ใช้ใน Canvas ล่วงหน้าให้ครบทุกแบบ
+                        await Promise.all([
+                            document.fonts.load('500 16px "Prompt"'),
+                            document.fonts.load('600 16px "Prompt"'),
+                            document.fonts.load('700 16px "Prompt"'),
+                            document.fonts.load('800 16px "Prompt"'),
+                            document.fonts.load('italic 600 16px "Prompt"'),
+                            document.fonts.load('italic 800 16px "Prompt"')
+                        ]);
+                        await document.fonts.ready;
+                    } catch (e) {
+                        console.warn("Font preload error:", e);
+                    }
+                    setIsFontLoaded(true);
+                    
+                    // หน่วงเวลาหลายรอบเพื่อบังคับให้ Canvas วาดด้วยฟอนต์ที่สมบูรณ์แน่นอนโดยไม่ต้องกดปุ่มใดๆ
+                    setTimeout(() => setRenderTrigger(prev => prev + 1), 100);
+                    setTimeout(() => setRenderTrigger(prev => prev + 1), 400);
+                    setTimeout(() => setRenderTrigger(prev => prev + 1), 1000);
+                };
+                loadFonts();
+            }, []);
+
+            // 2. Load Default Image (แก้ปัญหา CORS ทะลุการบล็อกด้วย Blob)
+            useEffect(() => {
+                const loadDefault = async () => {
+                    try {
+                        const targetUrl = "https://img2.pic.in.th/Breaking-News-_Resized.jpg";
+                        // ใช้ Image Proxy Server เฉพาะทางสำหรับรูปภาพ เพื่อแก้ปัญหา CORS 100%
+                        const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(targetUrl);
+                        
+                        const response = await fetch(proxyUrl);
+                        if (!response.ok) throw new Error("Fetch failed");
+                        
+                        // นำข้อมูลรูปแปลงเป็น Blob ท้องถิ่นเพื่อป้องกัน Canvas Tainted
+                        const blob = await response.blob();
+                        const objectUrl = URL.createObjectURL(blob);
+                        
+                        const img = new Image();
+                        img.onload = () => {
+                            setBgImage(img);
+                        };
+                        img.src = objectUrl;
+                    } catch (error) {
+                        console.warn("Failed to load default image. Fallback to basic color.", error);
+                        const fallbackCanvas = document.createElement('canvas');
+                        fallbackCanvas.width = 1080;
+                        fallbackCanvas.height = 1350;
+                        const ctx = fallbackCanvas.getContext('2d');
+                        ctx.fillStyle = '#1e3a8a'; // สีน้ำเงินเข้ม
+                        ctx.fillRect(0,0, 1080, 1350);
+                        
+                        const fallbackImg = new Image();
+                        fallbackImg.onload = () => setBgImage(fallbackImg);
+                        fallbackImg.src = fallbackCanvas.toDataURL();
+                    }
+                };
+                loadDefault();
+            }, []);
+
+            // 3. Render Canvas
+            const renderCanvas = useCallback(() => {
+                if (!bgImage || !isFontLoaded || !canvasRef.current) return;
+
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = bgImage.width;
+                canvas.height = bgImage.height;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(bgImage, 0, 0);
+
+                const lines = rawText.split('\n');
+                let totalHeight = 0;
+                
+                // คำนวณความสูงรวม
+                lines.forEach((text, index) => {
+                    const style = lineStyles[index] || { size: 75, color: "#FFFFFF", isBold: true };
+                    totalHeight += style.size;
+                });
+                totalHeight += (lines.length > 1 ? (lines.length - 1) * lineSpacing : 0);
+
+                let currentY = (canvas.height / 2) - (totalHeight / 2) + globalYOffset;
+
+                // วาดแต่ละบรรทัด
+                lines.forEach((text, index) => {
+                    const style = lineStyles[index] || { size: 75, color: "#FFFFFF", isBold: true };
+                    
+                    if (!text.trim()) {
+                        currentY += style.size + lineSpacing;
+                        return; 
+                    }
+
+                    const parts = text.split(/(ด่วน!)/g).filter(Boolean);
+                    
+                    let totalLineWidth = 0;
+                    const segments = parts.map(part => {
+                        let fontStr = '';
+                        let isSpecial = part === 'ด่วน!';
+                        let segmentSize = style.size;
+                        
+                        // ความหนาพื้นฐาน
+                        let baseWeight = style.isBold ? 700 : 500;
+                        
+                        if (isSpecial) {
+                            segmentSize = style.size + 2; // ใหญ่กว่า +2px (ตามที่สั่งแก้)
+                            // ลดความหนาลง 1 Step (เดิม 900/700 เปลี่ยนเป็น 800/600)
+                            let specialWeight = style.isBold ? 800 : 600; 
+                            fontStr = `italic ${specialWeight} ${segmentSize}px Prompt`;
+                        } else {
+                            fontStr = `${baseWeight} ${segmentSize}px Prompt`;
+                        }
+
+                        ctx.font = fontStr;
+                        const width = ctx.measureText(part).width;
+                        totalLineWidth += width;
+
+                        return { text: part, font: fontStr, width, isSpecial, size: segmentSize };
+                    });
+
+                    let startX = (canvas.width / 2) - (totalLineWidth / 2);
+                    const drawY = currentY + (style.size / 2);
+
+                    segments.forEach(seg => {
+                        ctx.font = seg.font;
+                        ctx.textBaseline = 'middle';
+                        ctx.lineJoin = 'round';
+                        ctx.miterLimit = 2;
+                        
+                        ctx.strokeStyle = '#000000';
+                        ctx.lineWidth = seg.size * 0.15;
+                        ctx.strokeText(seg.text, startX, drawY);
+
+                        if (seg.isSpecial) {
+                            ctx.fillStyle = '#FFFF00'; 
+                        } else {
+                            ctx.fillStyle = style.color; 
+                        }
+                        
+                        ctx.fillText(seg.text, startX, drawY);
+
+                        startX += seg.width;
+                    });
+
+                    currentY += style.size + lineSpacing;
+                });
+
+            }, [bgImage, isFontLoaded, rawText, lineStyles, lineSpacing, globalYOffset, renderTrigger]);
+
+            useEffect(() => {
+                renderCanvas();
+            }, [renderCanvas]);
+
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            setBgImage(img);
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleSave = () => {
+                if (!canvasRef.current) return;
+                try {
+                    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 1.0);
+                    const link = document.createElement('a');
+                    link.download = `breaking_news_${Date.now()}.jpg`;
+                    link.href = dataUrl;
+                    link.click();
+                } catch (e) {
+                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาอัปโหลดรูปภาพต้นฉบับจากเครื่องของคุณแทนครับ");
+                }
+            };
+
+            // ดึงค่าสไตล์ของแต่ละบรรทัด ถ้ายังไม่มีให้ใช้ค่าเริ่มต้นตามสั่ง (ขนาด 71)
+            const getLineStyle = (index) => lineStyles[index] || { size: 71, color: "#FFFFFF", isBold: true };
+            
+            const updateLineStyle = (index, field, value) => {
+                setLineStyles(prev => ({
+                    ...prev,
+                    [index]: { ...getLineStyle(index), [field]: value }
+                }));
+            };
+
+            const handleClearText = () => {
+                if (rawText.includes("ด่วน!")) {
+                    setRawText("ด่วน! ");
+                } else {
+                    setRawText("");
+                }
+            };
+
+            const linesArr = rawText.split('\n');
+
+            return (
+                <div className="min-h-screen flex flex-col md:flex-row bg-gray-50 text-gray-800 font-sans">
+                    {/* แทรก Element ซ่อนไว้เพื่อบังคับเบราว์เซอร์ให้ประมวลผลฟอนต์ลง DOM เสมอ */}
+                    <div style={{ visibility: 'hidden', position: 'absolute', top: '-9999px' }}>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 500 }}>test</span>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 600 }}>test</span>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 700 }}>test</span>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 800 }}>test</span>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 600, fontStyle: 'italic' }}>test</span>
+                        <span style={{ fontFamily: 'Prompt', fontWeight: 800, fontStyle: 'italic' }}>test</span>
+                    </div>
+
+                    {/* Left: Canvas */}
+                    <div className="w-full md:w-1/2 lg:w-3/5 md:h-screen md:sticky top-0 flex flex-col bg-white border-b md:border-b-0 md:border-r border-gray-200">
+                        <div className="p-3 bg-white border-b border-gray-200 flex justify-between items-center z-10 shadow-sm">
+                            <h1 className="text-sm font-bold text-blue-600 flex items-center gap-2">
+                                <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs">CM108</span>
+                                Breaking News ข่าวด่วน
+                            </h1>
+                            <div className="flex gap-2">
+                                <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs transition-colors border border-gray-300 shadow-sm">
+                                    <IconUpload /> เปลี่ยนกรอบ
+                                </button>
+                                <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+                            </div>
+                        </div>
+                        
+                        <div className="flex-1 canvas-container p-2 md:p-6 overflow-hidden flex items-center justify-center">
+                            {!isFontLoaded && <div className="absolute text-gray-600 bg-white px-4 py-2 rounded-lg shadow border border-gray-200 font-medium z-20">กำลังโหลดฟอนต์...</div>}
+                            <canvas ref={canvasRef} className="rounded-lg max-h-[60vh] md:max-h-full shadow-lg border border-gray-300"></canvas>
+                        </div>
+
+                        <div className="p-4 bg-white border-t border-gray-200 z-10">
+                             <button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow flex items-center justify-center gap-2 text-lg transition-transform active:scale-95">
+                                <IconSave /> บันทึกรูปภาพ (ความละเอียด 100%)
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Right: Controls */}
+                    <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col bg-gray-50 overflow-y-auto" style={{ maxHeight: '100vh' }}>
+                        <div className="p-5 flex flex-col gap-5">
+                            
+                            {/* 1. Text Input */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                                <div className="flex justify-between items-center mb-3">
+                                    <h3 className="text-gray-700 text-sm font-bold flex items-center gap-2">
+                                        <span className="bg-blue-100 text-blue-700 w-6 h-6 flex items-center justify-center rounded-full text-xs">1</span>
+                                        พิมพ์ข้อความพาดหัวทั้งหมด
+                                    </h3>
+                                    <button 
+                                        onClick={handleClearText}
+                                        className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1 border border-red-200 hover:bg-red-50 px-2 py-1.5 rounded transition-colors shadow-sm"
+                                    >
+                                        <IconTrash /> ลบข้อความ
+                                    </button>
+                                </div>
+                                <textarea 
+                                    value={rawText}
+                                    onChange={(e) => setRawText(e.target.value)}
+                                    placeholder="กด Enter เพื่อขึ้นบรรทัดใหม่..."
+                                    className="w-full bg-gray-50 text-gray-900 text-base p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px] font-medium shadow-inner"
+                                />
+                                <p className="text-gray-500 text-xs mt-2">
+                                    * พิมพ์ <b>ด่วน!</b> ระบบจะทำตัวหนาพิเศษ 1 Step และสีเหลืองอัตโนมัติ
+                                </p>
+                            </div>
+
+                            {/* 2. Global Options */}
+                            <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                                <h3 className="text-gray-700 text-sm font-bold mb-4 flex items-center gap-2">
+                                    <span className="bg-blue-100 text-blue-700 w-6 h-6 flex items-center justify-center rounded-full text-xs">2</span>
+                                    การจัดวางภาพรวม
+                                </h3>
+                                <div className="space-y-5">
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1.5">
+                                            <label className="text-gray-600 font-medium">ระยะห่างระหว่างบรรทัด</label>
+                                            <span className="text-blue-700 font-bold bg-blue-50 px-2 rounded border border-blue-100">{lineSpacing}px</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value={lineSpacing} onChange={(e) => setLineSpacing(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-sm mb-1.5">
+                                            <label className="text-gray-600 font-medium">เลื่อนขึ้น-ลง (แกน Y)</label>
+                                            <span className="text-blue-700 font-bold bg-blue-50 px-2 rounded border border-blue-100">{globalYOffset}</span>
+                                        </div>
+                                        <input type="range" min="-300" max="300" value={globalYOffset} onChange={(e) => setGlobalYOffset(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. Per-line styles */}
+                            <div className="mb-8">
+                                <h3 className="text-gray-700 text-sm font-bold mb-3 px-1 flex items-center gap-2">
+                                    <span className="bg-blue-100 text-blue-700 w-6 h-6 flex items-center justify-center rounded-full text-xs">3</span>
+                                    ตกแต่งสีและขนาดแต่ละบรรทัด
+                                </h3>
+                                
+                                <div className="space-y-3">
+                                    {linesArr.map((text, index) => {
+                                        const style = getLineStyle(index);
+                                        return (
+                                            <div key={index} className="bg-white border border-gray-200 p-3.5 rounded-xl shadow-sm flex flex-col gap-3 transition-colors hover:border-blue-300">
+                                                <div className="text-sm font-bold text-gray-800 truncate w-full border-b border-gray-100 pb-2">
+                                                    <span className="text-gray-400 font-normal mr-2">บรรทัด {index + 1}:</span>
+                                                    {text || <span className="text-gray-400 italic">(เว้นว่าง)</span>}
+                                                </div>
+                                                
+                                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                                    
+                                                    {/* Size Control */}
+                                                    <div className="flex items-center bg-gray-50 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                                                        <button onClick={() => updateLineStyle(index, 'size', Math.max(10, style.size - 1))} className="p-2 hover:bg-gray-200 text-gray-600 transition-colors"><IconMinus /></button>
+                                                        <div className="px-2 text-sm text-center min-w-[2.5rem] font-bold text-gray-800">{style.size}</div>
+                                                        <button onClick={() => updateLineStyle(index, 'size', style.size + 1)} className="p-2 hover:bg-gray-200 text-gray-600 transition-colors"><IconPlus /></button>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2">
+                                                        {/* Bold Toggle */}
+                                                        <button 
+                                                            onClick={() => updateLineStyle(index, 'isBold', !style.isBold)}
+                                                            className={`w-9 h-9 flex items-center justify-center rounded-lg border text-sm font-bold transition-colors shadow-sm ${style.isBold ? 'bg-blue-100 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-100'}`}
+                                                            title="ตัวหนา"
+                                                        >
+                                                            B
+                                                        </button>
+
+                                                        {/* Color Pickers */}
+                                                        <div className="flex gap-1.5 bg-gray-50 p-1.5 rounded-lg border border-gray-200 shadow-sm">
+                                                            {PRESET_COLORS.map(c => (
+                                                                <button 
+                                                                    key={c.hex}
+                                                                    onClick={() => updateLineStyle(index, 'color', c.hex)}
+                                                                    className={`w-6 h-6 rounded-full border-2 transition-transform shadow-sm ${style.color === c.hex ? 'border-blue-500 scale-125' : 'border-gray-300 hover:scale-110'}`}
+                                                                    style={{ backgroundColor: c.hex }}
+                                                                    title={c.label}
+                                                                />
+                                                            ))}
+                                                            <label className="w-6 h-6 rounded-full border border-gray-300 shadow-sm overflow-hidden cursor-pointer relative ml-1 flex items-center justify-center bg-gradient-to-tr from-red-500 via-green-500 to-blue-500 hover:scale-105 transition-transform">
+                                                                <input 
+                                                                    type="color" 
+                                                                    value={style.color}
+                                                                    onChange={(e) => updateLineStyle(index, 'color', e.target.value)}
+                                                                    className="opacity-0 absolute w-full h-full cursor-pointer"
+                                                                />
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
