@@ -123,48 +123,54 @@
                         console.warn("Font preload error:", e);
                     }
                     setIsFontLoaded(true);
-                    
-                    // หน่วงเวลาหลายรอบเพื่อบังคับให้ Canvas วาดด้วยฟอนต์ที่สมบูรณ์แน่นอนโดยไม่ต้องกดปุ่มใดๆ
-                    setTimeout(() => setRenderTrigger(prev => prev + 1), 100);
-                    setTimeout(() => setRenderTrigger(prev => prev + 1), 400);
-                    setTimeout(() => setRenderTrigger(prev => prev + 1), 1000);
                 };
                 loadFonts();
             }, []);
 
-            // 2. Load Default Image (แก้ปัญหา CORS ทะลุการบล็อกด้วย Blob)
+            // ตัวกระตุ้นให้วาดซ้ำ (ทำงานเมื่อ ฟอนต์โหลดเสร็จ + รูปภาพโหลดเสร็จ แล้วเท่านั้น)
             useEffect(() => {
-                const loadDefault = async () => {
-                    try {
-                        const targetUrl = "https://img2.pic.in.th/Breaking-News-_Resized.jpg";
-                        // ใช้ Image Proxy Server เฉพาะทางสำหรับรูปภาพ เพื่อแก้ปัญหา CORS 100%
-                        const proxyUrl = "https://wsrv.nl/?url=" + encodeURIComponent(targetUrl);
-                        
-                        const response = await fetch(proxyUrl);
-                        if (!response.ok) throw new Error("Fetch failed");
-                        
-                        // นำข้อมูลรูปแปลงเป็น Blob ท้องถิ่นเพื่อป้องกัน Canvas Tainted
-                        const blob = await response.blob();
-                        const objectUrl = URL.createObjectURL(blob);
-                        
-                        const img = new Image();
-                        img.onload = () => {
-                            setBgImage(img);
-                        };
-                        img.src = objectUrl;
-                    } catch (error) {
-                        console.warn("Failed to load default image. Fallback to basic color.", error);
+                if (bgImage && isFontLoaded) {
+                    let count = 0;
+                    // บังคับให้ Canvas วาดซ้ำ 4 รอบ (ทุกๆ 0.25 วินาที) หลังจากรูปมา เพื่อรับประกันว่าฟอนต์จะไม่เพี้ยนในเฟรมแรก
+                    const interval = setInterval(() => {
+                        setRenderTrigger(prev => prev + 1);
+                        count++;
+                        if (count > 4) clearInterval(interval);
+                    }, 250);
+                    return () => clearInterval(interval);
+                }
+            }, [bgImage, isFontLoaded]);
+
+            // 2. Load Default Image (เปลี่ยนกลับไปใช้วิธีโหลดตรงผ่าน wsrv.nl + q=100 แบบระบบเก่า โหลดเร็วสุด)
+            useEffect(() => {
+                const loadDefault = () => {
+                    // ไม่ต้องใส่ https:// ด้านหน้า เพื่อให้ wsrv.nl ทำงานได้เร็วที่สุดเหมือนระบบเก่า
+                    const targetUrl = "img2.pic.in.th/Breaking-News-_Resized.jpg"; 
+                    const proxyUrl = `https://wsrv.nl/?url=${targetUrl}&q=100`; // q=100 กันภาพแตก
+                    
+                    const img = new Image();
+                    img.crossOrigin = "anonymous"; // สำคัญ: ป้องกัน Canvas Tainted (CORS) ให้สามารถกดปุ่มเซฟรูปได้
+                    
+                    img.onload = () => {
+                        setBgImage(img);
+                    };
+                    
+                    img.onerror = () => {
+                        console.error("Failed to load image via proxy.");
+                        // หากโหลดไม่ขึ้นจริงๆ จะแสดงพื้นหลังสีน้ำเงินเข้มแทน (ป้องกันหน้าจอค้าง)
                         const fallbackCanvas = document.createElement('canvas');
                         fallbackCanvas.width = 1080;
                         fallbackCanvas.height = 1350;
                         const ctx = fallbackCanvas.getContext('2d');
-                        ctx.fillStyle = '#1e3a8a'; // สีน้ำเงินเข้ม
+                        ctx.fillStyle = '#1e3a8a';
                         ctx.fillRect(0,0, 1080, 1350);
                         
                         const fallbackImg = new Image();
                         fallbackImg.onload = () => setBgImage(fallbackImg);
                         fallbackImg.src = fallbackCanvas.toDataURL();
-                    }
+                    };
+                    
+                    img.src = proxyUrl;
                 };
                 loadDefault();
             }, []);
@@ -345,13 +351,13 @@
 
                         <div className="p-4 bg-white border-t border-gray-200 z-10">
                              <button onClick={handleSave} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow flex items-center justify-center gap-2 text-lg transition-transform active:scale-95">
-                                <IconSave /> บันทึกรูปภาพ (ความละเอียด 100%)
+                                <IconSave /> บันทึกรูปภาพ
                             </button>
                         </div>
                     </div>
 
                     {/* Right: Controls */}
-                    <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col bg-gray-50 overflow-y-auto" style={{ maxHeight: '100vh' }}>
+                    <div className="w-full md:w-1/2 lg:w-2/5 flex flex-col bg-gray-50 md:overflow-y-auto md:max-h-screen">
                         <div className="p-5 flex flex-col gap-5">
                             
                             {/* 1. Text Input */}
