@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News Reader Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; }
+        
+        /* แอนิเมชันคลื่นเสียงใหม่ */
+        .wave-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 48px;
+        }
+        .wave-bar {
+            width: 8px;
+            height: 100%;
+            background-color: #3b82f6;
+            border-radius: 999px;
+            animation: wave 1.2s ease-in-out infinite;
+        }
+        .wave-bar:nth-child(1) { animation-delay: 0.0s; }
+        .wave-bar:nth-child(2) { animation-delay: -0.2s; }
+        .wave-bar:nth-child(3) { animation-delay: -0.4s; }
+        .wave-bar:nth-child(4) { animation-delay: -0.6s; }
+        .wave-bar:nth-child(5) { animation-delay: -0.8s; }
+
+        @keyframes wave {
+            0%, 100% { height: 20%; background-color: #93c5fd; } /* สีฟ้าอ่อน */
+            50% { height: 100%; background-color: #2563eb; } /* สีฟ้าเข้ม */
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <!-- Header -->
+        <div class="bg-blue-600 p-6 text-white">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+                AI News Reader Studio
+            </h1>
+            <p class="text-blue-100 mt-2 text-sm">ระบบแปลงข้อความเป็นเสียงอ่านข่าวด้วย AI สำหรับทำคลิปวิดีโอ</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="p-6 space-y-6">
+            
+            <!-- API Key Setup Area -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <label class="block text-sm font-medium text-yellow-800 mb-2">
+                    🔑 ตั้งค่า Gemini API Key (ตัวเลือกเสริม)
+                </label>
+                <div class="flex gap-2">
+                    <input type="password" id="apiKeyInput" class="w-full p-2 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none text-sm font-mono" placeholder="หากมี Key ส่วนตัว สามารถวางที่นี่ได้">
+                    <button id="saveKeyBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-4 rounded-lg transition whitespace-nowrap">
+                        บันทึก
+                    </button>
+                </div>
+                <p class="text-xs text-yellow-600 mt-2">
+                    *หากเว้นว่างไว้ ระบบจะใช้โควต้าส่วนกลางของเว็บฟรี หากเว็บติด Limit คุณสามารถนำ Key ของตัวเองมาใส่เพื่อใช้งานต่อได้
+                </p>
+            </div>
+
+            <!-- Input Area -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">เนื้อหาข่าวที่ต้องการให้อ่าน (ภาษาไทย)</label>
+                <textarea id="newsText" rows="5" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="พิมพ์ข้อความข่าวของคุณที่นี่..."></textarea>
+                
+                <!-- Dictionary Area -->
+                <div class="mt-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <details class="group">
+                        <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-gray-700">
+                            <span><span class="mr-2">📚</span> พจนานุกรมคำอ่าน (ตั้งค่าตัวย่อ/คำเฉพาะ)</span>
+                            <span class="transition group-open:rotate-180">
+                                <svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
+                            </span>
+                        </summary>
+                        <div class="text-sm text-gray-600 mt-3 flex flex-col gap-2">
+                            <p>กำหนดคำอ่านให้ AI (พิมพ์บรรทัดละ 1 คำ รูปแบบ: <code>คำ=คำอ่าน</code>)</p>
+                            <textarea id="dictionaryText" rows="4" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono" placeholder="พิมพ์คำศัพท์ของคุณที่นี่...">CM108=ซีเอ็มร้อยแปด
+รพ.=โรงพยาบาล
+ตร.=ตำรวจ
+กทม.=กรุงเทพมหานคร</textarea>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- Controls Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <!-- Style Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">สไตล์การอ่านข่าว (โทนเสียง)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" class="style-btn active bg-blue-100 text-blue-700 border-2 border-blue-500 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="neutral, professional news anchor">
+                            📰 ข่าวทั่วไป
+                        </button>
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-red-300 hover:text-red-600 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="excited and urgent breaking news">
+                            🚨 ข่าวด่วน
+                        </button>
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-800 hover:text-gray-800 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="very serious, slow, and dramatic">
+                            🕵️ ข่าวอาชญากรรม
+                        </button>
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-green-400 hover:text-green-600 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="cheerful and warm friendly announcement">
+                            🎉 ประชาสัมพันธ์
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Voice Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">เลือกนักพากย์ AI</label>
+                    <select id="voiceSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white mb-4">
+                        <option value="Kore">Kore (เสียงผู้หญิง - นุ่มนวล)</option>
+                        <option value="Aoede">Aoede (เสียงผู้หญิง - เป็นทางการ)</option>
+                        <option value="Zephyr">Zephyr (เสียงผู้ชาย - ทุ้มลึก)</option>
+                        <option value="Fenrir">Fenrir (เสียงผู้ชาย - หนักแน่น)</option>
+                        <option value="Charon">Charon (เสียงผู้ชาย - เล่าเรื่อง)</option>
+                        <option value="Puck">Puck (เสียงผู้ชาย - สดใส)</option>
+                    </select>
+
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ความเร็วในการอ่าน</label>
+                    <select id="speedSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                        <option value="slowly">🐢 ช้า (Slow)</option>
+                        <option value="normally" selected>▶️ ปกติ (Normal)</option>
+                        <option value="quickly">🐇 เร็ว (Fast)</option>
+                        <option value="very rapidly">⚡ เร็วมาก (Very Fast)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                <span>สร้างเสียงอ่านข่าว</span>
+            </button>
+
+            <!-- Loading State (Updated) -->
+            <div id="loadingState" class="hidden flex flex-col items-center justify-center py-10">
+                <div class="wave-loader mb-6">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+                <p class="text-blue-600 font-semibold animate-pulse">กำลังสังเคราะห์คลื่นเสียง AI กรุณารอสักครู่...</p>
+            </div>
+
+            <!-- Result Area -->
+            <div id="resultArea" class="hidden bg-gray-50 rounded-xl p-6 border border-gray-200 mt-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">ผลลัพธ์เสียง</h3>
+                <audio id="audioPlayer" controls class="w-full mb-4">
+                    Your browser does not support the audio element.
+                </audio>
+                <div class="flex gap-3">
+                    <button id="downloadBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition flex justify-center items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        ดาวน์โหลดไฟล์ .MP3
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden bg-red-50 text-red-600 p-4 rounded-lg border border-red-200 text-sm mt-4">
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Load API Key from LocalStorage instead of hardcoding
+        let apiKey = localStorage.getItem('gemini_api_key') || ""; 
+        let currentAudioUrl = null;
+        let selectedStyle = "neutral, professional news anchor";
+
+        // UI Elements
+        const newsText = document.getElementById('newsText');
+        const dictionaryText = document.getElementById('dictionaryText');
+        const voiceSelect = document.getElementById('voiceSelect');
+        const speedSelect = document.getElementById('speedSelect');
+        const generateBtn = document.getElementById('generateBtn');
+        const loadingState = document.getElementById('loadingState');
+        const resultArea = document.getElementById('resultArea');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const styleBtns = document.querySelectorAll('.style-btn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveKeyBtn = document.getElementById('saveKeyBtn');
+
+        // Setup API Key Input
+        if (apiKey) {
+            apiKeyInput.value = apiKey; // ดึงค่าที่เคยบันทึกมาแสดง
+        }
+
+        // --- เพิ่มตัวแปรเก็บ URL ของ Cloudflare Worker ---
+        const PROXY_URL = "https://gemini-tts-proxy.108khamwo.workers.dev"; 
+
+        saveKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                apiKey = key;
+                
+                // เปลี่ยนสีปุ่มให้รู้ว่าบันทึกแล้ว
+                saveKeyBtn.textContent = "บันทึกแล้ว ✓";
+                saveKeyBtn.classList.replace('bg-yellow-500', 'bg-green-500');
+                saveKeyBtn.classList.replace('hover:bg-yellow-600', 'hover:bg-green-600');
+                
+                setTimeout(() => {
+                    saveKeyBtn.textContent = "บันทึก";
+                    saveKeyBtn.classList.replace('bg-green-500', 'bg-yellow-500');
+                    saveKeyBtn.classList.replace('hover:bg-green-600', 'hover:bg-yellow-600');
+                }, 2000);
+            } else {
+                localStorage.removeItem('gemini_api_key');
+                apiKey = "";
+                alert('ลบ API Key ออกจากเครื่องแล้ว');
+            }
+        });
+
+        // Style Button Selection Logic
+        styleBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Reset all buttons visually
+                styleBtns.forEach(b => {
+                    b.classList.remove('active', 'bg-blue-100', 'text-blue-700', 'border-blue-500');
+                    b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+                });
+                
+                // Set active button
+                const target = e.currentTarget;
+                target.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+                target.classList.add('active', 'bg-blue-100', 'text-blue-700', 'border-blue-500');
+                
+                selectedStyle = target.getAttribute('data-style');
+            });
+        });
+
+        // Convert PCM (Base64) to MP3 format using lamejs
+        function pcmToMp3(pcmBase64, sampleRate) {
+            const binaryString = atob(pcmBase64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const pcmData = new Int16Array(bytes.buffer);
+            
+            // Initialize lamejs MP3 Encoder (1 channel, sampleRate, 128 kbps)
+            const mp3encoder = new lamejs.Mp3Encoder(1, sampleRate, 128);
+            const mp3Data = [];
+            const sampleBlockSize = 1152; // multiple of 576
+            
+            for (let i = 0; i < pcmData.length; i += sampleBlockSize) {
+                const sampleChunk = pcmData.subarray(i, i + sampleBlockSize);
+                const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+                if (mp3buf.length > 0) {
+                    mp3Data.push(mp3buf);
+                }
+            }
+            
+            const mp3buf = mp3encoder.flush(); // finish writing mp3
+            if (mp3buf.length > 0) {
+                mp3Data.push(mp3buf);
+            }
+            
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        // Generate Audio with Retry Logic
+        async function fetchWithRetry(url, options, maxRetries = 5) {
+            let delay = 1000;
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === maxRetries - 1) throw error;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            // เอาบล็อกตรวจเช็ค apiKey ออก เพื่อให้ทำงานได้แม้ไม่กรอก
+            
+            let text = newsText.value.trim();
+            if (!text) {
+                showError("กรุณาพิมพ์เนื้อหาข่าวก่อนครับ");
+                return;
+            }
+
+            // --- Dictionary Process ---
+            const dictInput = dictionaryText.value.trim();
+            if (dictInput) {
+                const lines = dictInput.split('\n');
+                lines.forEach(line => {
+                    const parts = line.split('=');
+                    if (parts.length === 2) {
+                        const target = parts[0].trim();
+                        const replacement = parts[1].trim();
+                        if (target && replacement) {
+                            // ใช้ RegExp เพื่อให้ไม่สนตัวพิมพ์เล็ก/ใหญ่ (Case-insensitive)
+                            const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            const regex = new RegExp(escapeRegExp(target), 'gi');
+                            text = text.replace(regex, replacement);
+                        }
+                    }
+                });
+            }
+
+            // UI Update
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            loadingState.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+
+            try {
+                const voiceName = voiceSelect.value;
+                const speedCommand = speedSelect.value;
+                
+                // Construct proper prompt to prevent AI from reading instructions
+                const promptText = `Say ${speedCommand} in a ${selectedStyle} tone: ${text}`;
+
+                const payload = {
+                    contents: [{
+                        parts: [{ text: promptText }]
+                    }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: voiceName }
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                // เลือก URL ว่าจะใช้ Proxy หรือใช้ Key ส่วนตัว
+                let requestUrl = "";
+                if (apiKey) {
+                    // ถ้าผู้ใช้มี Key ในเครื่อง ให้ยิงตรงไป Google (ไม่ผ่านเว็บเรา)
+                    requestUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                } else {
+                    // ถ้าไม่มี ให้ยิงไปที่ Cloudflare Worker ของเรา
+                    requestUrl = PROXY_URL;
+                }
+                
+                const response = await fetchWithRetry(requestUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0) {
+                    const candidate = data.candidates[0];
+                    
+                    // เช็คว่าถูกบล็อกด้านความปลอดภัยหรือไม่
+                    if (candidate.finishReason && candidate.finishReason !== "STOP") {
+                        throw new Error(`ข้อความของคุณอาจขัดต่อกฎความปลอดภัยของ Google (ถูกบล็อกด้วยเหตุผล: ${candidate.finishReason})`);
+                    }
+
+                    if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0 && candidate.content.parts[0].inlineData) {
+                        const inlineData = candidate.content.parts[0].inlineData;
+                        const pcmBase64 = inlineData.data;
+                        
+                        // Extract sample rate from mimeType (e.g., audio/L16;rate=24000)
+                        const mimeType = inlineData.mimeType;
+                        const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                        const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1]) : 24000; // Default to 24000 if not found
+
+                        // Convert and Create URL
+                        const mp3Blob = pcmToMp3(pcmBase64, sampleRate);
+                        
+                        if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+                        currentAudioUrl = URL.createObjectURL(mp3Blob);
+                        
+                        // Update UI
+                        audioPlayer.src = currentAudioUrl;
+                        resultArea.classList.remove('hidden');
+                        
+                        // Auto play
+                        audioPlayer.play().catch(e => console.log("Autoplay prevented"));
+                    } else {
+                        throw new Error("AI ตอบกลับมา แต่ไม่มีข้อมูลเสียง (อาจเกิดจากข้อความมีปัญหา)");
+                    }
+                } else if (data.error) {
+                    throw new Error(`ข้อผิดพลาดจากระบบ: ${data.error.message}`);
+                } else {
+                    throw new Error("ไม่สามารถสร้างเสียงได้ กรุณาลองใหม่อีกครั้ง");
+                }
+
+            } catch (error) {
+                showError(`เกิดข้อผิดพลาด: ${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                loadingState.classList.add('hidden');
+            }
+        });
+
+        // Download logic
+        downloadBtn.addEventListener('click', () => {
+            if (!currentAudioUrl) return;
+            const a = document.createElement('a');
+            a.href = currentAudioUrl;
+            
+            // Create a safe filename from the first few words
+            let filename = newsText.value.trim().substring(0, 20).replace(/[^a-zA-Z0-9ก-๙]/g, '_');
+            a.download = `news_audio_${filename || 'generated'}.mp3`;
+            
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
