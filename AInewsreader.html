@@ -73,18 +73,18 @@
             <!-- Input Area -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">เนื้อหาข่าวที่ต้องการให้อ่าน (ภาษาไทย)</label>
-                <textarea id="newsText" rows="5" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" placeholder="พิมพ์ข้อความข่าวของคุณที่นี่..."></textarea>
+                <textarea id="newsText" rows="5" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition shadow-sm" placeholder="พิมพ์ข้อความข่าวของคุณที่นี่..."></textarea>
                 
                 <!-- Dictionary Area -->
-                <div class="mt-3 border border-gray-200 rounded-lg p-4 bg-gray-50">
+                <div class="mt-3 border border-gray-200 rounded-xl p-4 bg-gray-50 hover:bg-gray-100 transition duration-200 shadow-sm">
                     <details class="group">
                         <summary class="flex justify-between items-center font-medium cursor-pointer list-none text-sm text-gray-700">
-                            <span><span class="mr-2">📚</span> พจนานุกรมคำอ่าน (ตั้งค่าตัวย่อ/คำเฉพาะ)</span>
-                            <span class="transition group-open:rotate-180">
+                            <span class="flex items-center gap-2"><span class="text-lg">📚</span> พจนานุกรมคำอ่าน (ตั้งค่าตัวย่อ/คำเฉพาะ)</span>
+                            <span class="transition group-open:rotate-180 text-gray-400">
                                 <svg fill="none" height="20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20"><path d="M6 9l6 6 6-6"></path></svg>
                             </span>
                         </summary>
-                        <div class="text-sm text-gray-600 mt-3 flex flex-col gap-2">
+                        <div class="text-sm text-gray-600 mt-4 flex flex-col gap-2">
                             <p>กำหนดคำอ่านให้ AI (พิมพ์บรรทัดละ 1 คำ รูปแบบ: <code>คำ=คำอ่าน</code>)</p>
                             <textarea id="dictionaryText" rows="4" class="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 outline-none text-sm font-mono" placeholder="พิมพ์คำศัพท์ของคุณที่นี่...">CM108=ซีเอ็มร้อยแปด
 รพ.=โรงพยาบาล
@@ -96,41 +96,50 @@
             </div>
 
             <!-- Controls Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 
                 <!-- Style Selection -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">สไตล์การอ่านข่าว (โทนเสียง)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" class="style-btn active bg-blue-100 text-blue-700 border-2 border-blue-500 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="neutral, professional news anchor">
-                            📰 ข่าวทั่วไป
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                    <label class="block text-sm font-bold text-gray-800 mb-3">สไตล์การอ่านข่าว (โทนเสียง)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" class="style-btn active bg-blue-100 text-blue-700 border-2 border-blue-500 py-3 px-3 rounded-xl text-sm font-medium transition hover:shadow-md flex items-center justify-center gap-2" data-style="neutral, professional news anchor">
+                            <span class="text-lg">📰</span> ข่าวทั่วไป
                         </button>
-                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-red-300 hover:text-red-600 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="excited and urgent breaking news">
-                            🚨 ข่าวด่วน
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-red-400 hover:text-red-600 py-3 px-3 rounded-xl text-sm font-medium transition hover:shadow-md flex items-center justify-center gap-2" data-style="excited and urgent breaking news">
+                            <span class="text-lg">🚨</span> ข่าวด่วน
                         </button>
-                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-800 hover:text-gray-800 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="very serious, slow, and dramatic">
-                            🕵️ ข่าวอาชญากรรม
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-gray-800 hover:text-gray-900 py-3 px-3 rounded-xl text-sm font-medium transition hover:shadow-md flex items-center justify-center gap-2" data-style="very serious, slow, and dramatic">
+                            <span class="text-lg">🕵️</span> ข่าวอาชญากรรม
                         </button>
-                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-green-400 hover:text-green-600 py-2 px-3 rounded-lg text-sm font-medium transition" data-style="cheerful and warm friendly announcement">
-                            🎉 ประชาสัมพันธ์
+                        <button type="button" class="style-btn bg-white text-gray-700 border-2 border-gray-200 hover:border-green-400 hover:text-green-600 py-3 px-3 rounded-xl text-sm font-medium transition hover:shadow-md flex items-center justify-center gap-2" data-style="cheerful and warm friendly announcement">
+                            <span class="text-lg">🎉</span> ประชาสัมพันธ์
                         </button>
                     </div>
                 </div>
 
                 <!-- Voice Selection -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">เลือกนักพากย์ AI</label>
-                    <select id="voiceSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white mb-4">
-                        <option value="Kore">Kore (เสียงผู้หญิง - นุ่มนวล)</option>
-                        <option value="Aoede">Aoede (เสียงผู้หญิง - เป็นทางการ)</option>
-                        <option value="Zephyr">Zephyr (เสียงผู้ชาย - ทุ้มลึก)</option>
-                        <option value="Fenrir">Fenrir (เสียงผู้ชาย - หนักแน่น)</option>
-                        <option value="Charon">Charon (เสียงผู้ชาย - เล่าเรื่อง)</option>
-                        <option value="Puck">Puck (เสียงผู้ชาย - สดใส)</option>
-                    </select>
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                    <label class="block text-sm font-bold text-gray-800 mb-3">เลือกนักพากย์ AI</label>
+                    <!-- แก้ไขจาก flex แนวนอน เป็น flex-col สลับ flex-row เมื่อจอใหญ่ -->
+                    <div class="flex flex-col sm:flex-row gap-3 mb-5">
+                        <select id="voiceSelect" class="w-full sm:flex-1 p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white shadow-sm cursor-pointer">
+                            <option value="Kore">Kore (เสียงผู้หญิง - นุ่มนวล)</option>
+                            <option value="Aoede">Aoede (เสียงผู้หญิง - เป็นทางการ)</option>
+                            <option value="Zephyr">Zephyr (เสียงผู้ชาย - ทุ้มลึก)</option>
+                            <option value="Fenrir">Fenrir (เสียงผู้ชาย - หนักแน่น)</option>
+                            <option value="Charon">Charon (เสียงผู้ชาย - เล่าเรื่อง)</option>
+                            <option value="Puck">Puck (เสียงผู้ชาย - สดใส)</option>
+                        </select>
+                        <button type="button" id="previewBtn" class="w-full sm:w-auto bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold py-3 px-5 rounded-xl transition flex items-center justify-center gap-2 whitespace-nowrap shadow-sm" title="ฟังตัวอย่างเสียงนักพากย์">
+                            <svg id="previewIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                            </svg>
+                            <span id="previewText">ทดสอบเสียง</span>
+                        </button>
+                    </div>
 
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ความเร็วในการอ่าน</label>
-                    <select id="speedSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                    <label class="block text-sm font-bold text-gray-800 mb-3">ความเร็วในการอ่าน</label>
+                    <select id="speedSelect" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white shadow-sm cursor-pointer">
                         <option value="slowly">🐢 ช้า (Slow)</option>
                         <option value="normally" selected>▶️ ปกติ (Normal)</option>
                         <option value="quickly">🐇 เร็ว (Fast)</option>
@@ -140,8 +149,8 @@
             </div>
 
             <!-- Generate Button -->
-            <button id="generateBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <button id="generateBtn" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition duration-200 flex justify-center items-center gap-3 text-lg mt-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
                 </svg>
                 <span>สร้างเสียงอ่านข่าว</span>
@@ -202,6 +211,12 @@
         const styleBtns = document.querySelectorAll('.style-btn');
         const apiKeyInput = document.getElementById('apiKeyInput');
         const saveKeyBtn = document.getElementById('saveKeyBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const previewText = document.getElementById('previewText');
+        const previewIcon = document.getElementById('previewIcon');
+
+        // --- เพิ่มตัวแปรสำหรับทำ Cache ตัวอย่างเสียง ---
+        const previewCache = {}; // เก็บ URL เสียงแยกตามชื่อนักพากย์ { "Kore": "blob:http...", "Puck": "blob:http..." }
 
         // Setup API Key Input
         if (apiKey) {
@@ -300,6 +315,100 @@
                 }
             }
         }
+
+        // Preview Voice Logic
+        previewBtn.addEventListener('click', async () => {
+            if (previewBtn.disabled) return;
+            
+            const voiceName = voiceSelect.value;
+            
+            // --- 1. ตรวจสอบว่ามีเสียงนี้ใน Cache แล้วหรือยัง ---
+            if (previewCache[voiceName]) {
+                // ถ้ามีแล้ว นำมาเล่นเลย ไม่ต้องเรียก API ให้เปลืองโควต้า
+                playPreviewAudio(previewCache[voiceName]);
+                return;
+            }
+
+            // --- 2. ถ้ายังไม่มี ค่อยเรียก API เพื่อสร้างเสียง ---
+            previewBtn.disabled = true;
+            previewBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            previewText.textContent = "กำลังโหลด...";
+            previewIcon.classList.add('hidden'); // ซ่อนไอคอนเดิมตอนโหลด
+
+            try {
+                const promptText = `Say normally in a neutral, professional news anchor tone: สวัสดี ข่าวด่วนวันนี้`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                let requestUrl = apiKey ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}` : PROXY_URL;
+                
+                const response = await fetchWithRetry(requestUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (data.candidates && data.candidates.length > 0 && data.candidates[0].content?.parts?.[0]?.inlineData) {
+                    const inlineData = data.candidates[0].content.parts[0].inlineData;
+                    const pcmBase64 = inlineData.data;
+                    const sampleRateMatch = inlineData.mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1]) : 24000;
+
+                    const mp3Blob = pcmToMp3(pcmBase64, sampleRate);
+                    const audioUrl = URL.createObjectURL(mp3Blob);
+                    
+                    // --- 3. เก็บ URL ไว้ใน Cache เพื่อใช้ครั้งต่อไป ---
+                    previewCache[voiceName] = audioUrl;
+                    
+                    // เล่นเสียง
+                    playPreviewAudio(audioUrl);
+
+                } else {
+                    throw new Error("โหลดข้อมูลเสียงไม่สำเร็จ");
+                }
+            } catch (error) {
+                alert("ไม่สามารถเล่นตัวอย่างเสียงได้: " + error.message);
+                resetPreview();
+            }
+
+            // ฟังก์ชันสำหรับควบคุม UI ตอนเล่นเสียง
+            async function playPreviewAudio(url) {
+                previewBtn.disabled = true;
+                previewBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                const previewAudio = new Audio(url);
+                
+                previewText.textContent = "กำลังเล่น...";
+                previewIcon.classList.remove('hidden');
+                previewIcon.innerHTML = `<path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd" />`;
+                
+                try {
+                    await previewAudio.play();
+                } catch (e) {
+                    console.error("Play prevented", e);
+                    resetPreview();
+                }
+                
+                previewAudio.onended = resetPreview;
+            }
+
+            function resetPreview() {
+                previewBtn.disabled = false;
+                previewBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                previewText.textContent = "ทดสอบเสียง";
+                previewIcon.classList.remove('hidden');
+                previewIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />`;
+            }
+        });
 
         generateBtn.addEventListener('click', async () => {
             // เอาบล็อกตรวจเช็ค apiKey ออก เพื่อให้ทำงานได้แม้ไม่กรอก
