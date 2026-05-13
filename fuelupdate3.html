@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ: กรอบใหม่ 960x1200px</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ: 13 พ.ค. 69</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -71,7 +71,7 @@
                 <label class="block text-gray-700 font-bold mb-2 text-lg" style="font-family: 'Prompt', sans-serif;">วันที่และเวลา (ข้อความด้านบน)</label>
                 <input type="text" id="dateTimeText" value="มีผล 31 เมษายน 2569 เวลา 05.00 น." 
                     oninput="saveData()" style="font-family: 'Prompt', sans-serif;"
-                    class="w-full bg-blue-50 border border-blue-200 text-blue-800 text-center font-bold rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500">
+                    class="w-full bg-blue-50 border border-blue-200 text-blue-800 text-center font-bold rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-500 mb-3">
             </div>
 
             <hr class="mb-6 border-gray-200">
@@ -103,17 +103,34 @@
             </button>
         </div>
 
-        <!-- ส่วนแสดงผลรูปภาพ (ซ่อนไว้ก่อน) -->
-        <div id="previewSection" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-5 animate-[fadeIn_0.5s_ease-out]">
+        <!-- ส่วนแสดงผลรูปภาพ (กลับมาอยู่ด้านล่างตามปกติ) -->
+        <div id="previewSection" class="hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 animate-[fadeIn_0.5s_ease-out]">
             <h2 class="text-gray-800 font-bold mb-4 text-lg text-center">ตัวอย่างรูปภาพ</h2>
             
-            <div class="relative w-full rounded-lg overflow-hidden border-2 border-gray-300 shadow-inner bg-gray-100 flex justify-center">
+            <!-- แถบสไลด์ปรับตำแหน่ง X ของวันที่ (อยู่ด้านบนรูปภาพ จะได้มองเห็นชัดๆ) -->
+            <div class="bg-gray-100 p-3 rounded-lg border border-gray-200 mb-4">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs text-gray-600 font-bold">ปรับตำแหน่งซ้าย-ขวา (แกน X)</label>
+                    <div class="flex items-center gap-2">
+                        <span id="dateXValue" class="text-xs bg-white px-2 py-1 rounded border font-mono">0.560</span>
+                        <button type="button" onclick="resetDateXSlider()" class="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded transition-colors" title="คืนค่าเริ่มต้น">
+                            รีเซ็ต
+                        </button>
+                    </div>
+                </div>
+                <input type="range" id="dateXSlider" min="0.400" max="0.700" step="0.005" value="0.560" 
+                       class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+                       oninput="updateDateXSlider()">
+                <div class="text-[10px] text-gray-500 text-center mt-1">ใช้สไลเดอร์นี้หากวันที่ในรูปไม่อยู่กึ่งกลาง (จะเห็นผลทันที)</div>
+            </div>
+
+            <div class="relative w-full rounded-lg overflow-hidden border-2 border-gray-300 shadow-inner bg-gray-100 flex justify-center mb-4">
                 <!-- Canvas สำหรับวาดรูป -->
                 <canvas id="canvas" class="max-w-full h-auto"></canvas>
             </div>
 
             <button type="button" onclick="downloadImage()" 
-                class="w-full mt-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-lg transition duration-200 flex justify-center items-center gap-2">
+                class="w-full bg-green-500 hover:bg-green-600 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-lg transition duration-200 flex justify-center items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 บันทึกรูปภาพ (JPG)
             </button>
@@ -130,8 +147,7 @@
         </div>
     </div>
 
-    <!-- โหลดรูปต้นฉบับผ่าน Cloudflare Worker (เร็วและเสถียรกว่า wsrv.nl มาก) -->
-    <!-- วิธีใช้: แทนที่ https://[ชื่อworkerของคุณ].workers.dev ด้วยลิงก์ Worker ที่คุณสร้าง -->
+    <!-- โหลดรูปต้นฉบับผ่าน Cloudflare Worker -->
     <img id="baseImage" crossorigin="anonymous" 
          src="https://img-proxy.108khamwo.workers.dev/?url=https://img1.pic.in.th/images/-_Resized-1.jpg" 
          class="hidden"
@@ -139,6 +155,26 @@
          onerror="console.error('โหลดภาพพื้นหลังล้มเหลว')">
 
     <script>
+        // --- อัปเดตตัวเลขเมื่อเลื่อนสไลเดอร์ ---
+        function updateDateXSlider() {
+            const slider = document.getElementById('dateXSlider');
+            document.getElementById('dateXValue').innerText = parseFloat(slider.value).toFixed(3);
+            
+            // ถ้ามีการสร้างรูปภาพไว้แล้ว ให้เรนเดอร์ใหม่ทันทีแบบเรียลไทม์
+            const previewSection = document.getElementById('previewSection');
+            if (!previewSection.classList.contains('hidden')) {
+                // เรียกวาดรูปใหม่โดยไม่ต้องรอ setTimeout 50ms เพื่อให้เลื่อนแล้วเปลี่ยนทันที
+                drawCanvasFast();
+            }
+        }
+
+        // --- รีเซ็ตค่าสไลเดอร์ ---
+        function resetDateXSlider() {
+            const slider = document.getElementById('dateXSlider');
+            slider.value = 0.560; // ค่าเริ่มต้น
+            updateDateXSlider(); // เรียกอัปเดต UI และวาดรูปใหม่
+        }
+
         // --- 1. การตั้งค่าตำแหน่งแกน X (แนวนอน) สำหรับกรอบใหม่ ---
         // ปรับเป็นเปอร์เซ็นต์ของความกว้างภาพ (960px)
         const posX = {
@@ -459,7 +495,135 @@
             });
         }
 
-        // --- ส่วนการสร้างรูปลง Canvas ---
+        // --- แยกฟังก์ชันการวาดรูปแบบเร็ว (สำหรับเวลาเลื่อนสไลเดอร์) ---
+        async function drawCanvasFast() {
+            const baseImg = document.getElementById('baseImage');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            if (!baseImg.complete || baseImg.naturalWidth === 0) return;
+
+            const width = baseImg.naturalWidth;
+            const height = baseImg.naturalHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.drawImage(baseImg, 0, 0, width, height);
+
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const iosVerticalOffset = isIOS ? 5 : 0; 
+
+            // 1. วาดวันที่ (วิธีใหม่ แก้ปัญหา iOS 100%)
+            const dateText = document.getElementById('dateTimeText').value;
+            const dateY = (height * 0.130) - iosVerticalOffset; 
+            
+            // ดึงค่าแกน X จากสไลเดอร์มาใช้แทนค่าคงที่
+            const sliderValue = parseFloat(document.getElementById('dateXSlider').value);
+            const dateXCenter = width * sliderValue; 
+            
+            // ใช้ textAlign = 'left' แล้วคำนวณตำแหน่งกลางด้วยตัวเอง เพื่อแก้บั๊ก iOS
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.font = `bold ${(width * 0.045) - 3}px "Prompt", sans-serif`; 
+            
+            // คำนวณความกว้างข้อความ แล้วเอาไปลบออกจากจุดกึ่งกลาง (หาร 2)
+            const textMetrics = ctx.measureText(dateText);
+            const actualDateX = dateXCenter - (textMetrics.width / 2);
+
+            ctx.fillStyle = "#ffffff"; 
+            ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+            ctx.shadowBlur = 6;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2; 
+            
+            // วาดที่ตำแหน่งซ้ายที่ถูกคำนวณมาแล้ว
+            ctx.fillText(dateText, actualDateX, dateY);
+            
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+
+            // 2. ตำแหน่งคอลัมน์และราคาน้ำมัน
+            const colOldX = width * posX.oldPrice;   
+            const colDiffX = width * posX.newPrice;  
+            const colNewX = width * posX.diff;       
+            const priceFontSize = (width * 0.082) - 20; 
+            
+            ctx.textAlign = "center"; // ราคาน้ำมันกลับมาใช้ center ได้ตามปกติ
+
+            fuels.forEach(fuel => {
+                const oldVal = document.getElementById(`old_${fuel.id}`).value;
+                const newVal = document.getElementById(`new_${fuel.id}`).value;
+                const diffVal = document.getElementById(`diff_${fuel.id}`).value;
+                const diffNum = parseFloat(diffVal.replace(/[+\u200A]/g, '').trim());
+                
+                const yPos = (height * fuel.yPos) - iosVerticalOffset + (fuel.offsetY || 0);
+
+                let drawFontSize = priceFontSize;
+                if (!isNaN(diffNum) && Math.abs(diffNum) >= 10) {
+                    drawFontSize = priceFontSize - 6; 
+                }
+
+                if(oldVal) {
+                    ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
+                    ctx.fillStyle = "#000000"; 
+                    ctx.fillText(parseFloat(oldVal).toFixed(2), colOldX, yPos);
+                }
+                
+                if(diffVal && diffVal !== "-") {
+                    ctx.font = `bold ${drawFontSize}px "Prompt", sans-serif`;
+                    let cleanDisplay = diffVal.replace(/\u200A/g, ''); 
+                    
+                    if(cleanDisplay.includes('+')) {
+                        ctx.fillStyle = "#e60000"; 
+                    } else if (cleanDisplay.includes('-')) {
+                        ctx.fillStyle = "#1b882e"; 
+                    } else {
+                        ctx.fillStyle = "#000000";
+                    }
+                    ctx.fillText(cleanDisplay, colDiffX, yPos); 
+                } else if (diffVal === "-" || (oldVal && !diffVal)) {
+                    ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
+                    ctx.fillStyle = "#888888"; 
+                    ctx.fillText("-", colDiffX, yPos); 
+                }
+                
+                if(newVal) {
+                    ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
+                    ctx.fillStyle = "#ffffff"; 
+                    
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                    
+                    ctx.fillText(parseFloat(newVal).toFixed(2), colNewX, yPos); 
+                    
+                    ctx.shadowColor = "transparent";
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                } else if (oldVal) {
+                    ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
+                    ctx.fillStyle = "#ffffff"; 
+                    
+                    ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                    
+                    ctx.fillText("-", colNewX, yPos); 
+                    
+                    ctx.shadowColor = "transparent";
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                }
+            });
+        }
+
+        // --- ส่วนการสร้างรูปลง Canvas (หลัก) ---
         async function generatePreview() {
             const btn = document.getElementById('generateBtn');
             const originalText = btn.innerHTML;
@@ -469,13 +633,10 @@
             btn.disabled = true;
             btn.classList.add('opacity-75', 'cursor-not-allowed');
 
-            // ใช้ setTimeout เล็กน้อยเพื่อให้ UI อัปเดตข้อความปุ่มก่อนที่จะประมวลผล Canvas
             setTimeout(async () => {
                 try {
-                    await document.fonts.ready; // รอให้ฟอนต์ Prompt โหลดเสร็จก่อน
+                    await document.fonts.ready;
                     const baseImg = document.getElementById('baseImage');
-                    const canvas = document.getElementById('canvas');
-                    const ctx = canvas.getContext('2d');
                     
                     if (!baseImg.complete || baseImg.naturalWidth === 0) { 
                         showModal('แจ้งเตือน', 'ภาพต้นฉบับ (กรอบ) ยังโหลดไม่สำเร็จ \nโปรดรอสักครู่ เช็คอินเทอร์เน็ต หรือใช้วิธี "อัปโหลดภาพต้นฉบับ" แทนครับ'); 
@@ -485,145 +646,22 @@
                         return; 
                     }
 
-                    // บังคับขนาดตามรูปต้นฉบับ (960 x 1200) เพื่อความคมชัด 100%
-                    const width = baseImg.naturalWidth;
-                    const height = baseImg.naturalHeight;
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    // วาดพื้นหลัง
-                    ctx.drawImage(baseImg, 0, 0, width, height);
-
-                    // --- ตัวแปรสำหรับปรับตั้งค่า (อ้างอิงจากขนาดภาพ) ---
-                    // เช็คว่าเป็นอุปกรณ์ iOS (iPhone, iPad) หรือไม่
-                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                    
-                    // ปรับชดเชยแกน Y: ถ้าเป็น iOS ขยับตัวหนังสือ/ตัวเลขขึ้น 5px (ใส่ 5), ถ้าเป็นคอมพิวเตอร์ให้อยู่ที่เดิม (0)
-                const iosVerticalOffset = isIOS ? 5 : 0; 
-
-                // 1. วาดวันที่
-                const dateText = document.getElementById('dateTimeText').value;
-                const dateY = (height * 0.130) - iosVerticalOffset; 
-                const dateX = width * 0.560; // ปรับตำแหน่งแกน X เป็น 0.560 ตามคำสั่ง
-                
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                    
-                    // บังคับฟอนต์ Prompt Bold เท่านั้น และลดขนาดลง -3px เพื่อรองรับชื่อเดือนยาว
-                    ctx.font = `bold ${(width * 0.045) - 3}px "Prompt", sans-serif`; 
-                    ctx.fillStyle = "#ffffff"; // สีขาวตามตัวอย่าง
-                    // เงาข้อความวันที่
-                    ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-                    ctx.shadowBlur = 6;
-                    ctx.shadowOffsetX = 2;
-                    ctx.shadowOffsetY = 2; 
-                    ctx.fillText(dateText, dateX, dateY);
-                    
-                    // ปิดเงาก่อนวาดราคาน้ำมัน
-                    ctx.shadowColor = "transparent";
-                    ctx.shadowBlur = 0;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-
-                    // 2. ตำแหน่งแกน X ของคอลัมน์ต่างๆ (แก้ไข: สลับตำแหน่งส่วนต่างมาอยู่ตรงกลาง)
-                    const colOldX = width * posX.oldPrice;   // ราคาเดิม (ซ้าย)
-                    const colDiffX = width * posX.newPrice;  // ส่วนต่าง (กลาง) - ใช้ตำแหน่งเดิมของราคาใหม่
-                    const colNewX = width * posX.diff;       // ราคาใหม่ (ขวา) - ใช้ตำแหน่งเดิมของส่วนต่าง
-                    
-                    // ขนาดฟอนต์สำหรับตัวเลขราคาน้ำมัน ลดขนาดลง -20px ตามคำสั่ง
-                    const priceFontSize = (width * 0.082) - 20; 
-
-                    // ลูปวาดข้อมูลน้ำมันแต่ละชนิด
-                    fuels.forEach(fuel => {
-                        const oldVal = document.getElementById(`old_${fuel.id}`).value;
-                        const newVal = document.getElementById(`new_${fuel.id}`).value;
-                        const diffVal = document.getElementById(`diff_${fuel.id}`).value;
-                        const diffNum = parseFloat(diffVal.replace(/[+\u200A]/g, '').trim());
-                        
-                        const yPos = (height * fuel.yPos) - iosVerticalOffset + (fuel.offsetY || 0);
-
-                        // ลดขนาดฟอนต์ถ้าตัวเลขยาว (เช่น ส่วนต่างเกิน 10 บาท)
-                        let drawFontSize = priceFontSize;
-                        if (!isNaN(diffNum) && Math.abs(diffNum) >= 10) {
-                            drawFontSize = priceFontSize - 6; 
-                        }
-
-                        // คอลัมน์ ราคาเดิม (สีดำ) - อยู่ซ้ายสุดเหมือนเดิม
-                        if(oldVal) {
-                            ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
-                            ctx.fillStyle = "#000000"; 
-                            ctx.fillText(parseFloat(oldVal).toFixed(2), colOldX, yPos);
-                        }
-                        
-                        // คอลัมน์ ส่วนต่าง (ตรงกลาง) - สีแดง/เขียว
-                        if(diffVal && diffVal !== "-") {
-                            ctx.font = `bold ${drawFontSize}px "Prompt", sans-serif`;
-                            let cleanDisplay = diffVal.replace(/\u200A/g, ''); 
-                            
-                            if(cleanDisplay.includes('+')) {
-                                ctx.fillStyle = "#e60000"; // สีแดงสำหรับขึ้นราคา
-                            } else if (cleanDisplay.includes('-')) {
-                                ctx.fillStyle = "#1b882e"; // สีเขียวสำหรับลงราคา
-                            } else {
-                                ctx.fillStyle = "#000000";
-                            }
-                            ctx.fillText(cleanDisplay, colDiffX, yPos); // วาดที่ตำแหน่งกลาง
-                        } else if (diffVal === "-" || (oldVal && !diffVal)) {
-                            ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
-                            ctx.fillStyle = "#888888"; // สีเทาสำหรับไม่มีการเปลี่ยนแปลง
-                            ctx.fillText("-", colDiffX, yPos); // วาดที่ตำแหน่งกลาง
-                        }
-                        
-                        // คอลัมน์ ราคาใหม่ (สีขาว บนพื้นเขียว) - ย้ายไปขวาสุด
-                        if(newVal) {
-                            ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
-                            ctx.fillStyle = "#ffffff"; 
-                            
-                            // เพิ่มเงาบางๆ ให้ตัวเลขราคาใหม่
-                            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                            ctx.shadowBlur = 4;
-                            ctx.shadowOffsetX = 2;
-                            ctx.shadowOffsetY = 2;
-                            
-                            ctx.fillText(parseFloat(newVal).toFixed(2), colNewX, yPos); // วาดที่ตำแหน่งขวา
-                            
-                            // เคลียร์ค่าเงากลับเป็นปกติ ป้องกันไม่ให้กระทบลูปถัดไป
-                            ctx.shadowColor = "transparent";
-                            ctx.shadowBlur = 0;
-                            ctx.shadowOffsetX = 0;
-                            ctx.shadowOffsetY = 0;
-                        } else if (oldVal) {
-                            ctx.font = `bold ${priceFontSize}px "Prompt", sans-serif`;
-                            ctx.fillStyle = "#ffffff"; 
-                            
-                            // เพิ่มเงาให้ขีด - เหมือนตัวเลขด้วย
-                            ctx.shadowColor = "rgba(0, 0, 0, 0.5)";
-                            ctx.shadowBlur = 4;
-                            ctx.shadowOffsetX = 2;
-                            ctx.shadowOffsetY = 2;
-                            
-                            ctx.fillText("-", colNewX, yPos); // วาดขีดเมื่อเว้นช่องว่างไว้
-                            
-                            ctx.shadowColor = "transparent";
-                            ctx.shadowBlur = 0;
-                            ctx.shadowOffsetX = 0;
-                            ctx.shadowOffsetY = 0;
-                        }
-                    });
+                    // เรียกใช้ฟังก์ชันวาดรูป
+                    await drawCanvasFast();
 
                     const previewSection = document.getElementById('previewSection');
                     previewSection.classList.remove('hidden');
+                    // เลื่อนหน้าจอลงมาหา "รูปตัวอย่าง" ตามปกติ (ไม่เด้งขึ้นบน)
                     previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } catch (error) { 
                     console.warn(error); 
                     showModal("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการสร้างรูปภาพ (โปรดรอฟอนต์หรือภาพโหลดสักครู่)"); 
                 } finally {
-                    // คืนค่าปุ่มกลับมาเมื่อทำงานเสร็จ
                     btn.innerHTML = originalText;
                     btn.disabled = false;
                     btn.classList.remove('opacity-75', 'cursor-not-allowed');
                 }
-            }, 50); // สิ้นสุด setTimeout
+            }, 50);
         }
 
         function downloadImage() {
