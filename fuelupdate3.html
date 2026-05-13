@@ -130,9 +130,10 @@
         </div>
     </div>
 
-    <!-- โหลดรูปต้นฉบับใหม่ ซ่อนไว้ (แก้ปัญหา CORS ด้วย Proxy) คงคุณภาพไว้ที่ q=100 -->
+    <!-- โหลดรูปต้นฉบับผ่าน Cloudflare Worker (เร็วและเสถียรกว่า wsrv.nl มาก) -->
+    <!-- วิธีใช้: แทนที่ https://[ชื่อworkerของคุณ].workers.dev ด้วยลิงก์ Worker ที่คุณสร้าง -->
     <img id="baseImage" crossorigin="anonymous" 
-         src="https://wsrv.nl/?url=img1.pic.in.th/images/-_Resized-1.jpg&q=100" 
+         src="https://img-proxy.108khamwo.workers.dev/?url=https://img1.pic.in.th/images/-_Resized-1.jpg" 
          class="hidden"
          onload="console.log('โหลดภาพพื้นหลังสำเร็จ')"
          onerror="console.error('โหลดภาพพื้นหลังล้มเหลว')">
