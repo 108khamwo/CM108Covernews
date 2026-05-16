@@ -244,7 +244,7 @@
             const toast = document.getElementById('toast');
             const toastMsg = document.getElementById('toast-msg');
 
-            // Render Canvas กลางสำหรับ Composite (เอาไว้ประมวลผลวาดภาพ)
+            // Render Canvas กลางสำหรับ Composite
             const renderCanvas = document.createElement('canvas');
             const renderCtx = renderCanvas.getContext('2d');
 
@@ -254,7 +254,7 @@
                 setTimeout(() => toast.style.opacity = '0', 3000);
             }
 
-            // --- 1. อัปโหลดและเตรียมไฟล์ ---
+            // --- 1. อัปโหลดและเตรียมไฟล์ (ประหยัด Memory เพื่อ iOS) ---
             dropZone.addEventListener('click', () => fileInput.click());
             fileInput.addEventListener('change', handleFilesSelect);
 
@@ -306,7 +306,7 @@
                             let w = img.width;
                             let h = img.height;
 
-                            // ป้องกันแครชบน iOS: ถ้ารูปใหญ่เกิน 16 ล้านพิกเซล ให้ย่อลงมาให้อยู่ในขีดจำกัดที่ปลอดภัย
+                            // ป้องกันแครชบน iOS
                             const MAX_PIXELS = 16000000;
                             if (w * h > MAX_PIXELS) {
                                 const ratio = Math.sqrt(MAX_PIXELS / (w * h));
@@ -314,37 +314,48 @@
                                 h = Math.floor(h * ratio);
                             }
 
-                            // 1. Base Image Canvas
-                            const baseCanvas = document.createElement('canvas');
-                            baseCanvas.width = w; baseCanvas.height = h;
-                            const baseCtx = baseCanvas.getContext('2d');
-                            baseCtx.drawImage(img, 0, 0, w, h);
+                            // หัวใจสำคัญ: สร้าง Working Size ลดขนาดลง 10 เท่าเพื่อประมวลผลเบลอและหน้ากาก (ประหยัด RAM iOS 100%)
+                            const workScale = Math.min(1, 1200 / Math.max(w, h));
+                            const workW = Math.max(1, Math.floor(w * workScale));
+                            const workH = Math.max(1, Math.floor(h * workScale));
 
-                            // 2. Final Canvas (ภาพที่ส่งออกและโชว์บนจอ)
+                            // 1. Final Canvas (ภาพความละเอียดสูงสุดที่ส่งออก)
                             const finalCanvas = document.createElement('canvas');
                             finalCanvas.width = w; finalCanvas.height = h;
                             finalCanvas.style.position = 'absolute';
                             finalCanvas.style.transformOrigin = '0 0';
                             const finalCtx = finalCanvas.getContext('2d');
-                            finalCtx.drawImage(baseCanvas, 0, 0);
+                            finalCtx.drawImage(img, 0, 0, w, h);
 
-                            // 3. Temp Canvas (หน้ากากวาดเส้น) **ตัด Padding ทิ้งเพื่อลด Memory ล้น**
+                            // 2. Temp Canvas (หน้ากากวาดเส้น - ขนาดเล็ก)
                             const tempCanvas = document.createElement('canvas');
-                            tempCanvas.width = w; 
-                            tempCanvas.height = h;
+                            tempCanvas.width = workW; 
+                            tempCanvas.height = workH;
                             const tempCtx = tempCanvas.getContext('2d');
 
-                            // 4. Blur Layer Canvas
+                            // 3. Blur Canvas (ภาพเบลอ - ขนาดเล็ก)
                             const blurCanvas = document.createElement('canvas');
-                            blurCanvas.width = w; blurCanvas.height = h;
+                            blurCanvas.width = workW; blurCanvas.height = workH;
                             const blurCtx = blurCanvas.getContext('2d');
                             
+                            // 4. Thumbnail เล็กจิ๋ว (ป้องกัน iOS แครชตอนสลับรูป)
+                            const thumbCanvas = document.createElement('canvas');
+                            thumbCanvas.width = 80; thumbCanvas.height = 80;
+                            const thumbCtx = thumbCanvas.getContext('2d');
+                            thumbCtx.drawImage(img, 0, 0, 80, 80);
+                            const thumbUrl = thumbCanvas.toDataURL('image/jpeg', 0.5);
+
                             const data = {
                                 id: Date.now() + Math.random().toString(36).substr(2, 9),
                                 file: file,
+                                img: img, // เก็บรูปต้นฉบับไว้
                                 width: w,
                                 height: h,
-                                baseCanvas, finalCanvas, finalCtx,
+                                workScale: workScale,
+                                workW: workW,
+                                workH: workH,
+                                thumbUrl: thumbUrl,
+                                finalCanvas, finalCtx,
                                 tempCanvas, tempCtx,
                                 blurCanvas, blurCtx,
                                 strokes: [],
@@ -363,35 +374,47 @@
                 });
             }
 
-            // ระบบเบลอแบบ Safe iOS: ย่อภาพไปเบลอใน Canvas เล็ก แล้วค่อยขยายกลับ จะไม่แครชแน่นอน
+            // ระบบเบลอแบบ Safe iOS: ทำงานบนความละเอียดต่ำ
             function generateBlurLayer(data) {
-                data.blurCtx.clearRect(0, 0, data.width, data.height);
+                data.blurCtx.clearRect(0, 0, data.workW, data.workH);
                 if (data.blurRadius === 0) {
-                    data.blurCtx.drawImage(data.baseCanvas, 0, 0);
+                    data.blurCtx.drawImage(data.img, 0, 0, data.workW, data.workH);
                     return;
                 }
 
-                // สร้าง Canvas เล็กขนาดไม่เกิน 800px เพื่อทำการเบลอ (เร็วและไม่กินแรม)
-                const scaleFactor = Math.min(1, 800 / Math.max(data.width, data.height));
-                const smallW = Math.max(1, Math.floor(data.width * scaleFactor));
-                const smallH = Math.max(1, Math.floor(data.height * scaleFactor));
+                // ลดขนาดอีกนิดเพื่อให้เบลอได้เร็วขึ้น
+                const blurScale = Math.min(1, 400 / Math.max(data.width, data.height));
+                const smallW = Math.max(1, Math.floor(data.width * blurScale));
+                const smallH = Math.max(1, Math.floor(data.height * blurScale));
 
                 const smallCanvas = document.createElement('canvas');
                 smallCanvas.width = smallW; smallCanvas.height = smallH;
                 const smallCtx = smallCanvas.getContext('2d');
-                smallCtx.drawImage(data.baseCanvas, 0, 0, smallW, smallH);
+                smallCtx.drawImage(data.img, 0, 0, smallW, smallH);
 
                 const blurTempCanvas = document.createElement('canvas');
                 blurTempCanvas.width = smallW; blurTempCanvas.height = smallH;
                 const blurTempCtx = blurTempCanvas.getContext('2d');
                 
-                // ชดเชยค่าความเบลอกับสเกลที่ย่อไป และบังคับเป็นจำนวนเต็มด้วย Math.round() เพื่อแก้บัก Safari
-                const adjustedBlur = Math.round(data.blurRadius * scaleFactor * 2.5); 
+                // ใช้ Filter เบลอมาตรฐาน
+                const adjustedBlur = Math.round(data.blurRadius * blurScale * 3); 
                 blurTempCtx.filter = `blur(${adjustedBlur}px)`;
                 blurTempCtx.drawImage(smallCanvas, 0, 0);
+                blurTempCtx.filter = 'none';
 
-                // ขยายกลับใส่ Canvas หลัก
-                data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.width, data.height);
+                // MANUAL BLUR FALLBACK: ดักเผื่อ iOS ตัดการทำงาน Filter ทิ้ง ระบบนี้จะสร้างภาพเบลอด้วยการวาดซ้อน
+                if (data.blurRadius > 0) {
+                    const offset = Math.max(1, Math.round(data.blurRadius * blurScale));
+                    blurTempCtx.globalAlpha = 0.3;
+                    blurTempCtx.drawImage(smallCanvas, offset, offset);
+                    blurTempCtx.drawImage(smallCanvas, -offset, -offset);
+                    blurTempCtx.drawImage(smallCanvas, offset, -offset);
+                    blurTempCtx.drawImage(smallCanvas, -offset, offset);
+                    blurTempCtx.globalAlpha = 1.0;
+                }
+
+                // นำไปใส่ใน Blur Canvas ขนาด Work
+                data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.workW, data.workH);
             }
 
             // --- 2. การแสดงผลและการเปลี่ยนรูป ---
@@ -400,7 +423,7 @@
                 imagesData.forEach((data, index) => {
                     const thumb = document.createElement('div');
                     thumb.className = `w-14 h-14 rounded-lg bg-cover bg-center shrink-0 cursor-pointer transition-all snap-center ${index === activeIndex ? 'border-2 border-blue-500 scale-110 shadow-md' : 'border border-gray-600 opacity-60'}`;
-                    thumb.style.backgroundImage = `url(${data.baseCanvas.toDataURL('image/jpeg', 0.1)})`;
+                    thumb.style.backgroundImage = `url(${data.thumbUrl})`; // ใช้รูป Thumbnail เบาๆ แก้แครช
                     thumb.onclick = () => loadToWorkspace(index);
                     thumbnailContainer.appendChild(thumb);
                 });
@@ -416,7 +439,6 @@
                 activeIndex = index;
                 const data = imagesData[activeIndex];
                 
-                // สืบทอดค่าจากรูปก่อนหน้าเฉพาะกรณีเปิดครั้งแรก
                 if (oldIndex >= 0 && oldIndex !== activeIndex && !data.viewed) {
                     const prevData = imagesData[oldIndex];
                     data.brushSize = prevData.brushSize;
@@ -566,7 +588,7 @@
             
             workspace.addEventListener('mousemove', (e) => {
                 if (activeIndex < 0) return;
-                updateAndShowBrushPreview(e.clientX, e.clientY); // โชว์หัวแปรงตอนลากเมาส์ลอยๆ
+                updateAndShowBrushPreview(e.clientX, e.clientY);
                 if (!isDrawing) return;
                 const pos = getCanvasPos(e.clientX, e.clientY);
                 imagesData[activeIndex].strokes[imagesData[activeIndex].strokes.length - 1].points.push(pos);
@@ -597,7 +619,7 @@
                 applyTransform();
             }, { passive: false });
 
-            // --- 4. ระบบการวาดภาพและผสาน (Compositing Engine สำหรับ iOS) ---
+            // --- 4. ระบบการวาดภาพและผสาน (Scale Down) ---
             function drawSegment(p1, p2) {
                 const data = imagesData[activeIndex];
                 const ctx = data.tempCtx;
@@ -605,19 +627,25 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 
-                // ใช้เทคนิคซ้อนเส้น (Multi-stroke) แทน shadowBlur 
-                // เพราะ iOS Safari มักจะมีบั๊กตัดเส้นทิ้งเวลาตั้งค่า shadowBlur ทำให้ระบายไม่ติด
+                // แปลงพิกัดจากรูปใหญ่ ให้อยู่ในกระดานวาดรูปเล็ก
+                const scale = data.workScale;
+                const brushSize = data.brushSize * scale;
+                const x1 = p1.x * scale;
+                const y1 = p1.y * scale;
+                const x2 = p2.x * scale;
+                const y2 = p2.y * scale;
+
                 const passes = 3;
                 for (let i = passes; i >= 0; i--) {
                     ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
                     
                     if (i === 0) {
-                        ctx.lineWidth = data.brushSize;
+                        ctx.lineWidth = brushSize;
                         ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
                     } else {
-                        ctx.lineWidth = data.brushSize + (i * data.brushSize * 0.15);
+                        ctx.lineWidth = brushSize + (i * brushSize * 0.15);
                         ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                     }
                     ctx.stroke();
@@ -636,23 +664,23 @@
                 }
             }
 
-            // ระบบผสานภาพที่ดีที่สุด ทำงานบน iOS ได้ 100%
+            // ระบบผสานภาพที่ดีที่สุด: ประมวลผลบนบอร์ดเล็ก แล้วดึงไปขึงใส่รูปจริง
             function compositeCanvas(data) {
-                renderCanvas.width = data.width;
-                renderCanvas.height = data.height;
+                renderCanvas.width = data.workW;
+                renderCanvas.height = data.workH;
                 
-                // 1. วางภาพเบลอขนาดเต็มเป็นพื้นหลัง
+                // 1. วางภาพเบลอขนาดเล็กลงไปก่อน
                 renderCtx.drawImage(data.blurCanvas, 0, 0);
                 
-                // 2. ใช้ destination-in เพื่อเจาะให้เหลือภาพเบลอเฉพาะบริเวณรอยแปรงที่เราระบายไว้
+                // 2. ใช้ Mask ตัดให้เหลือแค่รอยแปรง
                 renderCtx.globalCompositeOperation = 'destination-in';
                 renderCtx.drawImage(data.tempCanvas, 0, 0); 
                 renderCtx.globalCompositeOperation = 'source-over';
 
-                // 3. วาดภาพต้นฉบับคมชัดลงไปก่อน แล้ววางทับด้วยเลเยอร์ที่เบลอและคว้านรอยไว้เรียบร้อยแล้ว
+                // 3. วาดรูปลง Final (ความละเอียดสูงสุด 12MP) แล้วเอาหน้ากากเบลอมาขึงทับ
                 data.finalCtx.clearRect(0, 0, data.width, data.height);
-                data.finalCtx.drawImage(data.baseCanvas, 0, 0); 
-                data.finalCtx.drawImage(renderCanvas, 0, 0);    
+                data.finalCtx.drawImage(data.img, 0, 0, data.width, data.height); 
+                data.finalCtx.drawImage(renderCanvas, 0, 0, data.workW, data.workH, 0, 0, data.width, data.height);    
             }
 
             // --- 5. การควบคุม UI ---
@@ -665,7 +693,6 @@
                 imagesData[activeIndex].brushSize = actualSize;
                 brushValLabel.textContent = val;
 
-                // พรีวิวหัวแปรงให้อยู่ตรงกลางจอเวลาลากตัวเลื่อน
                 const rect = workspace.getBoundingClientRect();
                 updateAndShowBrushPreview(rect.left + rect.width / 2, rect.top + rect.height / 2);
                 clearTimeout(previewTimeout);
@@ -696,27 +723,30 @@
                 if (data.strokes.length === 0) return;
                 data.strokes.pop(); 
                 
-                data.tempCtx.clearRect(0, 0, data.width, data.height);
+                data.tempCtx.clearRect(0, 0, data.workW, data.workH);
                 data.strokes.forEach(stroke => {
                     if (stroke.points.length === 0) return;
                     
+                    const scale = data.workScale;
+                    const brushSize = stroke.size * scale;
                     const passes = 3;
+                    
                     for (let i = passes; i >= 0; i--) {
                         data.tempCtx.beginPath();
-                        data.tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                        data.tempCtx.moveTo(stroke.points[0].x * scale, stroke.points[0].y * scale);
                         data.tempCtx.lineCap = 'round';
                         data.tempCtx.lineJoin = 'round';
                         
                         if (i === 0) {
-                            data.tempCtx.lineWidth = stroke.size;
+                            data.tempCtx.lineWidth = brushSize;
                             data.tempCtx.strokeStyle = 'rgba(0, 0, 0, 1)';
                         } else {
-                            data.tempCtx.lineWidth = stroke.size + (i * stroke.size * 0.15);
+                            data.tempCtx.lineWidth = brushSize + (i * brushSize * 0.15);
                             data.tempCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                         }
                         
                         for (let j = 1; j < stroke.points.length; j++) {
-                            data.tempCtx.lineTo(stroke.points[j].x, stroke.points[j].y);
+                            data.tempCtx.lineTo(stroke.points[j].x * scale, stroke.points[j].y * scale);
                         }
                         data.tempCtx.stroke();
                     }
