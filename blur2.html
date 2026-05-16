@@ -385,8 +385,8 @@
                 blurTempCanvas.width = smallW; blurTempCanvas.height = smallH;
                 const blurTempCtx = blurTempCanvas.getContext('2d');
                 
-                // ชดเชยค่าความเบลอกับสเกลที่ย่อไป เพื่อให้เอฟเฟกต์เบลอแรงสะใจตามที่ตั้งค่า
-                const adjustedBlur = data.blurRadius * scaleFactor * 2.5; 
+                // ชดเชยค่าความเบลอกับสเกลที่ย่อไป และบังคับเป็นจำนวนเต็มด้วย Math.round() เพื่อแก้บัก Safari
+                const adjustedBlur = Math.round(data.blurRadius * scaleFactor * 2.5); 
                 blurTempCtx.filter = `blur(${adjustedBlur}px)`;
                 blurTempCtx.drawImage(smallCanvas, 0, 0);
 
@@ -602,19 +602,26 @@
                 const data = imagesData[activeIndex];
                 const ctx = data.tempCtx;
                 
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.lineWidth = data.brushSize;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.strokeStyle = 'black';
                 
-                // ใช้ shadowBlur สร้างขอบฟุ้งที่กินทรัพยากรน้อยลงเพราะตัด Padding ออกไปแล้ว
-                ctx.shadowBlur = Math.max(2, data.brushSize * 0.2);
-                ctx.shadowColor = 'black';
-                ctx.stroke();
-                ctx.shadowBlur = 0;
+                // ใช้เทคนิคซ้อนเส้น (Multi-stroke) แทน shadowBlur 
+                // เพราะ iOS Safari มักจะมีบั๊กตัดเส้นทิ้งเวลาตั้งค่า shadowBlur ทำให้ระบายไม่ติด
+                const passes = 3;
+                for (let i = passes; i >= 0; i--) {
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    
+                    if (i === 0) {
+                        ctx.lineWidth = data.brushSize;
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
+                    } else {
+                        ctx.lineWidth = data.brushSize + (i * data.brushSize * 0.15);
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                    }
+                    ctx.stroke();
+                }
 
                 triggerRender(data);
             }
@@ -692,17 +699,27 @@
                 data.tempCtx.clearRect(0, 0, data.width, data.height);
                 data.strokes.forEach(stroke => {
                     if (stroke.points.length === 0) return;
-                    data.tempCtx.beginPath();
-                    data.tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
-                    data.tempCtx.lineWidth = stroke.size;
-                    data.tempCtx.lineCap = 'round';
-                    data.tempCtx.lineJoin = 'round';
-                    data.tempCtx.strokeStyle = 'black';
-                    data.tempCtx.shadowBlur = Math.max(2, stroke.size * 0.2);
-                    data.tempCtx.shadowColor = 'black';
-                    for (let i = 1; i < stroke.points.length; i++) data.tempCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
-                    data.tempCtx.stroke();
-                    data.tempCtx.shadowBlur = 0;
+                    
+                    const passes = 3;
+                    for (let i = passes; i >= 0; i--) {
+                        data.tempCtx.beginPath();
+                        data.tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                        data.tempCtx.lineCap = 'round';
+                        data.tempCtx.lineJoin = 'round';
+                        
+                        if (i === 0) {
+                            data.tempCtx.lineWidth = stroke.size;
+                            data.tempCtx.strokeStyle = 'rgba(0, 0, 0, 1)';
+                        } else {
+                            data.tempCtx.lineWidth = stroke.size + (i * stroke.size * 0.15);
+                            data.tempCtx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                        }
+                        
+                        for (let j = 1; j < stroke.points.length; j++) {
+                            data.tempCtx.lineTo(stroke.points[j].x, stroke.points[j].y);
+                        }
+                        data.tempCtx.stroke();
+                    }
                 });
                 triggerRender(data);
             });
