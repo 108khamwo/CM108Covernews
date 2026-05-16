@@ -101,14 +101,6 @@
             
             <!-- พรีวิวขนาดหัวแปรง -->
             <div id="brush-preview"></div>
-
-            <!-- ปุ่มเปลี่ยนรูป ซ้าย/ขวา -->
-            <button id="btn-prev" class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full glass-btn text-white flex justify-center items-center z-20 hidden">
-                <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button id="btn-next" class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full glass-btn text-white flex justify-center items-center z-20 hidden">
-                <i class="fa-solid fa-chevron-right"></i>
-            </button>
             
             <!-- คำแนะนำการใช้งาน (แสดงแปปเดียว) -->
             <div id="gesture-hint" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-4 py-2 rounded-full pointer-events-none transition-opacity duration-500 z-30">
@@ -116,10 +108,20 @@
             </div>
         </div>
 
-        <!-- แถบ Thumbnail แบบเลื่อนได้ -->
-        <div class="h-16 bg-gray-900 border-b border-gray-800 shrink-0 z-40 hidden" id="thumbnail-container-wrapper">
-            <div id="thumbnail-container" class="flex items-center px-3 h-full space-x-2 overflow-x-auto hide-scrollbar snap-x">
-                <!-- Thumbnails -->
+        <!-- แถบ Thumbnail แบบเลื่อนได้ (ปุ่มเลื่อนรูปถูกย้ายมาที่นี่) -->
+        <div class="h-16 bg-gray-900 border-b border-gray-800 shrink-0 z-40 hidden w-full" id="thumbnail-container-wrapper">
+            <div class="flex items-center justify-between w-full h-full px-2">
+                <button id="btn-prev" class="w-10 h-10 rounded-full bg-gray-800 text-white flex justify-center items-center shrink-0 hover:bg-gray-700 active:scale-95 transition-all z-20 hidden">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
+                <div id="thumbnail-container" class="flex-grow flex items-center px-2 h-full space-x-2 overflow-x-auto hide-scrollbar snap-x">
+                    <!-- Thumbnails -->
+                </div>
+
+                <button id="btn-next" class="w-10 h-10 rounded-full bg-gray-800 text-white flex justify-center items-center shrink-0 hover:bg-gray-700 active:scale-95 transition-all z-20 hidden">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
         </div>
 
@@ -594,7 +596,7 @@
                     drawSegment(lastDrawPos, pos);
                     lastDrawPos = pos;
                     
-                    // อัปเดตตำแหน่งหัวแปรง
+                    // อัปเดตตำแหน่งหัวแปรงขณะวาด
                     updateAndShowBrushPreview(e.touches[0].clientX, e.touches[0].clientY);
 
                 } else if (isPanning && e.touches.length === 2) {
@@ -633,7 +635,7 @@
             const stopInteraction = () => {
                 isDrawing = false;
                 isPanning = false;
-                hideBrushPreview();
+                hideBrushPreview(); // ซ่อนหัวแปรงเมื่อยกนิ้ว/เมาส์
             };
             
             workspace.addEventListener('touchend', stopInteraction);
@@ -691,11 +693,13 @@
                 applyTransform();
             }, { passive: false });
 
-            // --- 5. ระบบวาดและผสานภาพ (Compositing Engine) ---
+            // --- 5. ระบบวาดและผสานภาพ (Compositing Engine สำหรับ iOS) ---
             
             function drawSegment(p1, p2) {
                 const data = imagesData[activeIndex];
                 const ctx = data.tempCtx;
+                
+                const featherSize = Math.max(2, data.brushSize * 0.2);
                 
                 ctx.beginPath();
                 ctx.moveTo(p1.x, p1.y);
@@ -704,7 +708,15 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.strokeStyle = 'black';
+                
+                // ใช้ shadowBlur สร้างขอบฟุ้งแทน filter เพื่อแก้ปัญหาบั๊กบน iOS
+                ctx.shadowBlur = featherSize;
+                ctx.shadowColor = 'black';
+
                 ctx.stroke();
+                
+                // รีเซ็ตค่า shadow
+                ctx.shadowBlur = 0;
 
                 triggerRender(data);
             }
@@ -720,31 +732,25 @@
                 }
             }
 
-            // ฟังก์ชันสำคัญ: ผสานภาพจริง + หน้ากาก + ภาพเบลอ เข้าด้วยกันด้วยเทคนิคขอบฟุ้ง (Soft Edge)
+            // ฟังก์ชันผสานภาพที่ปรับแก้ให้รองรับ iOS 100%
             function compositeCanvas(data) {
-                // 1. เตรียม Render Canvas ให้มีขนาดเท่าภาพ
                 renderCanvas.width = data.width;
                 renderCanvas.height = data.height;
                 
-                // 2. ดึงภาพที่เบลอแล้วทั้งหมดมาเป็นพื้น
-                renderCtx.drawImage(data.blurCanvas, 0, 0);
-                
-                // 3. ใช้เทคนิค destination-in เพื่อตัดให้เหลือเฉพาะบริเวณที่เราระบาย (หน้ากากดำ)
-                renderCtx.globalCompositeOperation = 'destination-in';
-                
-                // *ทีเด็ด*: ใส่ Blur เล็กน้อยให้กับหน้ากาก เพื่อให้ขอบของรอยแปรงฟุ้งเนียนไปกับภาพจริง!
-                const featherSize = Math.max(2, data.brushSize * 0.2); 
-                renderCtx.filter = `blur(${featherSize}px)`;
+                // 1. วาดหน้ากาก (Mask) ลงไปก่อน (ขอบฟุ้งถูกทำมาแล้วจาก shadowBlur)
                 renderCtx.drawImage(data.tempCanvas, -data.maskPadding, -data.maskPadding);
                 
-                // คืนค่า
+                // 2. ใช้ source-in เพื่อให้ภาพเบลอแสดงเฉพาะในบริเวณที่มีหน้ากากดำ
+                renderCtx.globalCompositeOperation = 'source-in';
+                renderCtx.drawImage(data.blurCanvas, 0, 0);
+                
+                // คืนค่าโหมดผสานภาพ
                 renderCtx.globalCompositeOperation = 'source-over';
-                renderCtx.filter = 'none';
 
-                // 4. นำผลลัพธ์ไปวาดทับลงบน Final Canvas
+                // 3. นำผลลัพธ์ไปวาดทับลงบน Final Canvas
                 data.finalCtx.clearRect(0, 0, data.width, data.height);
                 data.finalCtx.drawImage(data.baseCanvas, 0, 0); // วางรูปชัด
-                data.finalCtx.drawImage(renderCanvas, 0, 0);    // วางชิ้นส่วนเบลอที่ขอบเนียนทับ
+                data.finalCtx.drawImage(renderCanvas, 0, 0);    // วางชิ้นส่วนเบลอทับรอยระบาย
             }
 
             // --- 6. การควบคุม UI และ Brush Preview ---
@@ -814,16 +820,24 @@
                 data.tempCtx.clearRect(-data.maskPadding, -data.maskPadding, data.width + data.maskPadding * 2, data.height + data.maskPadding * 2);
                 data.strokes.forEach(stroke => {
                     if (stroke.points.length === 0) return;
+                    
+                    const featherSize = Math.max(2, stroke.size * 0.2);
+                    
                     data.tempCtx.beginPath();
                     data.tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
                     data.tempCtx.lineWidth = stroke.size;
                     data.tempCtx.lineCap = 'round';
                     data.tempCtx.lineJoin = 'round';
                     data.tempCtx.strokeStyle = 'black';
+                    
+                    data.tempCtx.shadowBlur = featherSize;
+                    data.tempCtx.shadowColor = 'black';
+                    
                     for (let i = 1; i < stroke.points.length; i++) {
                         data.tempCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
                     }
                     data.tempCtx.stroke();
+                    data.tempCtx.shadowBlur = 0;
                 });
                 
                 triggerRender(data);
