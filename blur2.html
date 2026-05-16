@@ -374,7 +374,8 @@
                 });
             }
 
-            // ระบบเบลอแบบ Safe iOS: ทำงานบนความละเอียดต่ำ
+            // ระบบเบลอแบบ Safe iOS: เปลี่ยนจาก filter:blur ที่มีบั๊ก มาใช้ Step-Downscaling 
+            // รับประกันว่าเบลอแรง 100% บน iOS เพราะใช้การย่อพิกเซลโดยตรง 
             function generateBlurLayer(data) {
                 data.blurCtx.clearRect(0, 0, data.workW, data.workH);
                 if (data.blurRadius === 0) {
@@ -382,49 +383,49 @@
                     return;
                 }
 
-                // ลดขนาดภาพเพื่อเบลอ แต่ปรับขนาดเพิ่มขึ้นจาก 400 เป็น 800 ป้องกันภาพแตกเป็นบล็อก
-                const blurScale = Math.min(1, 800 / Math.max(data.width, data.height));
-                const smallW = Math.max(1, Math.floor(data.width * blurScale));
-                const smallH = Math.max(1, Math.floor(data.height * blurScale));
+                // คำนวณขนาดภาพเป้าหมาย (ยิ่งเบลอมาก ภาพยิ่งถูกย่อให้เล็กมาก)
+                // แปลงสเกล 1-100 เป็น Curve ยิ่งดันสุดภาพจะถูกย่อเหลือแค่หลัก 10px
+                const factor = Math.pow(1 - (data.blurRadius / 100), 2);
+                const targetDim = Math.max(8, Math.floor(10 + 800 * factor)); 
 
-                const smallCanvas = document.createElement('canvas');
-                smallCanvas.width = smallW; smallCanvas.height = smallH;
-                const smallCtx = smallCanvas.getContext('2d');
-                smallCtx.drawImage(data.img, 0, 0, smallW, smallH);
-
-                const blurTempCanvas = document.createElement('canvas');
-                blurTempCanvas.width = smallW; blurTempCanvas.height = smallH;
-                const blurTempCtx = blurTempCanvas.getContext('2d');
+                let currentW = data.workW;
+                let currentH = data.workH;
                 
-                // แก้ปัญหา iOS Safari เบลอไม่สุด: 
-                // Safari จะมีบั๊กตัดการทำงานทิ้งถ้าค่า filter: blur() สูงเกินไป
-                // เราจึงต้องแบ่งการเบลอเป็นหลายๆ รอบ (Multiple Passes) เพื่อสะสมความเบลอให้สุดตามต้องการ
-                const totalBlur = data.blurRadius; // ค่าความเบลอจากสไลเดอร์ 1-100
-                const maxSafeBlur = 15; // ระยะปลอดภัยบน iOS ไม่ให้เกิน 15px ต่อรอบ
-                const passes = Math.max(1, Math.ceil(totalBlur / maxSafeBlur)); // คำนวณจำนวนรอบ
-                const blurPerPass = Math.round(totalBlur / passes); // ค่าความเบลอต่อรอบ
+                const sourceCanvas = document.createElement('canvas');
+                sourceCanvas.width = currentW;
+                sourceCanvas.height = currentH;
+                const sourceCtx = sourceCanvas.getContext('2d');
+                sourceCtx.drawImage(data.img, 0, 0, data.width, data.height, 0, 0, currentW, currentH);
+                
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.imageSmoothingEnabled = true;
 
-                // เบลอรอบแรก
-                blurTempCtx.filter = `blur(${blurPerPass}px)`;
-                blurTempCtx.drawImage(smallCanvas, 0, 0);
-
-                // หากตั้งค่าเบลอสูงๆ ให้วนลูปวาดทับเพิ่มความเบลอทีละชั้น
-                for (let i = 1; i < passes; i++) {
-                    // ก๊อปปี้ภาพที่เบลอแล้วกลับไปตั้งต้นใหม่
-                    smallCtx.clearRect(0, 0, smallW, smallH);
-                    smallCtx.drawImage(blurTempCanvas, 0, 0);
+                // ย่อภาพลงทีละ 40% (x0.6) เพื่อให้พิกเซลเฉลี่ยสีกันนุ่มนวลเหมือนการเบลอจริง
+                while (currentW > targetDim || currentH > targetDim) {
+                    let nextW = Math.max(targetDim, Math.floor(currentW * 0.6));
+                    let nextH = Math.max(targetDim, Math.floor(currentH * 0.6));
                     
-                    // เบลอซ้อนทับเข้าไปอีก
-                    blurTempCtx.clearRect(0, 0, smallW, smallH);
-                    blurTempCtx.drawImage(smallCanvas, 0, 0);
-                }
-                
-                blurTempCtx.filter = 'none';
+                    if (nextW === currentW && nextH === currentH) break;
 
-                // นำไปใส่ใน Blur Canvas ขนาด Work
-                // ทริก: วาดทับกัน 2 รอบเพื่อป้องกันขอบภาพโปร่งแสง (Edge Bleeding) จากเอฟเฟกต์เบลอ
-                data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.workW, data.workH);
-                data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.workW, data.workH);
+                    tempCanvas.width = nextW;
+                    tempCanvas.height = nextH;
+                    tempCtx.drawImage(sourceCanvas, 0, 0, currentW, currentH, 0, 0, nextW, nextH);
+                    
+                    sourceCanvas.width = nextW;
+                    sourceCanvas.height = nextH;
+                    sourceCtx.drawImage(tempCanvas, 0, 0);
+                    
+                    currentW = nextW;
+                    currentH = nextH;
+                }
+
+                // ขยายภาพจิ๋วกลับขึ้นมา พร้อมใช้ filter อ่อนๆ (ปลอดภัยบน iOS) เพื่อลบรอยหยักพิกเซลให้ฟุ้งเนียนที่สุด
+                data.blurCtx.imageSmoothingEnabled = true;
+                const fineBlur = Math.min(4, data.blurRadius * 0.08); // สูงสุดแค่ 4px iOS รับได้ 100%
+                data.blurCtx.filter = `blur(${fineBlur}px)`;
+                data.blurCtx.drawImage(sourceCanvas, 0, 0, currentW, currentH, 0, 0, data.workW, data.workH);
+                data.blurCtx.filter = 'none';
             }
 
             // --- 2. การแสดงผลและการเปลี่ยนรูป ---
