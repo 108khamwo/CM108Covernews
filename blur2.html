@@ -396,13 +396,34 @@
                 blurTempCanvas.width = smallW; blurTempCanvas.height = smallH;
                 const blurTempCtx = blurTempCanvas.getContext('2d');
                 
-                // ใช้ Filter เบลอมาตรฐาน (ลบระบบ Manual Fallback ที่ทำให้เกิดภาพซ้อนออกทั้งหมด)
-                const adjustedBlur = Math.round(data.blurRadius * blurScale * 3); 
-                blurTempCtx.filter = `blur(${adjustedBlur}px)`;
+                // แก้ปัญหา iOS Safari เบลอไม่สุด: 
+                // Safari จะมีบั๊กตัดการทำงานทิ้งถ้าค่า filter: blur() สูงเกินไป
+                // เราจึงต้องแบ่งการเบลอเป็นหลายๆ รอบ (Multiple Passes) เพื่อสะสมความเบลอให้สุดตามต้องการ
+                const totalBlur = data.blurRadius; // ค่าความเบลอจากสไลเดอร์ 1-100
+                const maxSafeBlur = 15; // ระยะปลอดภัยบน iOS ไม่ให้เกิน 15px ต่อรอบ
+                const passes = Math.max(1, Math.ceil(totalBlur / maxSafeBlur)); // คำนวณจำนวนรอบ
+                const blurPerPass = Math.round(totalBlur / passes); // ค่าความเบลอต่อรอบ
+
+                // เบลอรอบแรก
+                blurTempCtx.filter = `blur(${blurPerPass}px)`;
                 blurTempCtx.drawImage(smallCanvas, 0, 0);
+
+                // หากตั้งค่าเบลอสูงๆ ให้วนลูปวาดทับเพิ่มความเบลอทีละชั้น
+                for (let i = 1; i < passes; i++) {
+                    // ก๊อปปี้ภาพที่เบลอแล้วกลับไปตั้งต้นใหม่
+                    smallCtx.clearRect(0, 0, smallW, smallH);
+                    smallCtx.drawImage(blurTempCanvas, 0, 0);
+                    
+                    // เบลอซ้อนทับเข้าไปอีก
+                    blurTempCtx.clearRect(0, 0, smallW, smallH);
+                    blurTempCtx.drawImage(smallCanvas, 0, 0);
+                }
+                
                 blurTempCtx.filter = 'none';
 
                 // นำไปใส่ใน Blur Canvas ขนาด Work
+                // ทริก: วาดทับกัน 2 รอบเพื่อป้องกันขอบภาพโปร่งแสง (Edge Bleeding) จากเอฟเฟกต์เบลอ
+                data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.workW, data.workH);
                 data.blurCtx.drawImage(blurTempCanvas, 0, 0, smallW, smallH, 0, 0, data.workW, data.workH);
             }
 
