@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ระบบจัดการภาพก่อนแชร์ (Blur Tool)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f3f4f6;
+            overscroll-behavior: none; /* ป้องกันการ pull-to-refresh บนมือถือ */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ซ่อน Scrollbar แต่ยังเลื่อนได้ */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* พรีวิวขนาดแปรง */
+        #brush-preview {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background-color: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 100;
+            transition: opacity 0.2s;
+            display: none;
+        }
+
+        /* ป้องกันการเลือกข้อความเวลาแตะลาก */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="w-full h-[100dvh] overflow-hidden flex flex-col">
+
+    <!-- หน้า 1: อัปโหลดรูปภาพ -->
+    <div id="upload-view" class="flex flex-col items-center justify-center h-full w-full p-6 bg-white transition-opacity duration-300">
+        <div class="max-w-md w-full text-center space-y-6">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4 shadow-inner">
+                <i class="fa-solid fa-shield-cat text-4xl text-blue-600"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800">เบลอภาพก่อนแชร์</h1>
+            <p class="text-gray-500">ซ่อนส่วนที่ไม่เหมาะสมของภาพก่อนส่งต่อ รองรับการใช้งานผ่านมือถือเต็มรูปแบบ</p>
+            
+            <div id="drop-zone" class="w-full mt-8 p-8 border-2 border-dashed border-blue-300 rounded-2xl bg-blue-50 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-100 transition-colors active:scale-95 duration-200">
+                <i class="fa-solid fa-images text-4xl text-blue-400 mb-3"></i>
+                <span class="text-blue-700 font-semibold text-lg">แตะเพื่อเลือกรูปภาพ</span>
+                <span class="text-blue-400 text-sm mt-1">เลือกได้หลายรูปพร้อมกัน</span>
+                <input type="file" id="file-input" class="hidden" accept="image/jpeg, image/png, image/webp" multiple>
+            </div>
+            
+            <div class="text-xs text-gray-400 mt-8 flex flex-col items-center">
+                <p><i class="fa-solid fa-lock mr-1"></i> ประมวลผลบนเครื่องของคุณ 100%</p>
+                <p>ไม่มีการอัปโหลดรูปภาพขึ้นเซิร์ฟเวอร์</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- หน้า 2: พื้นที่แก้ไขภาพ -->
+    <div id="editor-view" class="hidden flex-col h-full w-full bg-[#111] absolute top-0 left-0 z-10">
+        
+        <!-- Top Bar -->
+        <div class="h-14 flex justify-between items-center px-4 bg-gray-900 text-white z-50 border-b border-gray-800 shrink-0">
+            <button id="btn-back" class="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+            <div id="image-counter" class="text-sm font-medium tracking-wide">1 / 1</div>
+            <button id="btn-download-all" class="text-blue-400 font-semibold px-3 py-1.5 hover:bg-gray-800 rounded-lg transition-colors flex items-center space-x-1">
+                <i class="fa-solid fa-download"></i>
+                <span class="hidden sm:inline">โหลดทั้งหมด</span>
+            </button>
+        </div>
+
+        <!-- Workspace (Canvas Area) -->
+        <div id="workspace" class="flex-grow relative overflow-hidden touch-none no-select bg-black">
+            <!-- Canvas จะถูกใส่เข้าไปที่นี่ด้วย JS -->
+            
+            <!-- พรีวิวขนาดหัวแปรง -->
+            <div id="brush-preview"></div>
+            
+            <!-- คำแนะนำการใช้งาน -->
+            <div id="gesture-hint" class="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-4 py-2 rounded-full pointer-events-none transition-opacity duration-500 z-30">
+                <i class="fa-solid fa-hand-pointer mr-1"></i> 1 นิ้ววาดเบลอ / 2 นิ้วซูมเลื่อน
+            </div>
+        </div>
+
+        <!-- แถบ Thumbnail แบบเลื่อนได้ (ปุ่มเลื่อนรูปถูกย้ายมาที่นี่) -->
+        <div class="h-16 bg-gray-900 border-b border-gray-800 shrink-0 z-40 hidden w-full" id="thumbnail-container-wrapper">
+            <div class="flex items-center justify-between w-full h-full px-2">
+                <button id="btn-prev" class="w-10 h-10 rounded-full bg-gray-800 text-white flex justify-center items-center shrink-0 hover:bg-gray-700 active:scale-95 transition-all z-20 hidden">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
+                <div id="thumbnail-container" class="flex-grow flex items-center px-2 h-full space-x-2 overflow-x-auto hide-scrollbar snap-x">
+                    <!-- Thumbnails -->
+                </div>
+
+                <button id="btn-next" class="w-10 h-10 rounded-full bg-gray-800 text-white flex justify-center items-center shrink-0 hover:bg-gray-700 active:scale-95 transition-all z-20 hidden">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Toolbar -->
+        <div class="bg-white rounded-t-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-50 shrink-0 pb-[env(safe-area-inset-bottom)]">
+            <div class="p-4 sm:p-5 max-w-2xl mx-auto flex flex-col space-y-4">
+                
+                <!-- ตัวควบคุมการเบลอ -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-8 flex justify-center text-gray-400"><i class="fa-solid fa-droplet"></i></div>
+                    <div class="flex-grow flex flex-col">
+                        <div class="flex justify-between text-xs text-gray-500 font-medium mb-1">
+                            <span>ความเบลอ</span>
+                            <span id="blur-val">3</span>
+                        </div>
+                        <input type="range" id="blur-slider" min="0" max="100" value="3" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                </div>
+
+                <!-- ตัวควบคุมขนาดแปรง -->
+                <div class="flex items-center space-x-4">
+                    <div class="w-8 flex justify-center text-gray-400"><i class="fa-solid fa-paint-brush"></i></div>
+                    <div class="flex-grow flex flex-col">
+                        <div class="flex justify-between text-xs text-gray-500 font-medium mb-1">
+                            <span>ขนาดหัวแปรง</span>
+                            <span id="brush-val">8</span>
+                        </div>
+                        <input type="range" id="brush-slider" min="1" max="100" value="8" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                    </div>
+                </div>
+
+                <!-- ปุ่มการกระทำ -->
+                <div class="flex justify-between items-center pt-1 border-t border-gray-100">
+                    <div class="flex space-x-2">
+                        <button id="btn-undo" class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 flex justify-center items-center transition-colors active:scale-95" title="เลิกทำ">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                        <button id="btn-delete" class="w-10 h-10 rounded-full bg-red-50 text-red-500 hover:bg-red-100 flex justify-center items-center transition-colors active:scale-95" title="ลบรูปนี้">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <button id="btn-save-single" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-full font-semibold shadow-sm transition-colors active:scale-95 flex items-center space-x-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span>บันทึกรูปนี้</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Modal -->
+    <div id="download-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm shadow-2xl transform transition-transform">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">เลือกรูปแบบการโหลด</h3>
+            <p class="text-gray-500 text-sm mb-6">ดาวน์โหลดทั้งหมดเป็นไฟล์ ZIP (แนะนำ) หรือโหลดแยกทีละรูป</p>
+            <div class="space-y-3">
+                <button id="btn-dl-zip" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fa-solid fa-file-zipper"></i>
+                    <span>โหลดเป็นไฟล์ ZIP</span>
+                </button>
+                <button id="btn-dl-individual" class="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fa-regular fa-images"></i>
+                    <span>โหลดแยกทีละรูป</span>
+                </button>
+                <button id="btn-dl-cancel" class="w-full py-2 text-gray-400 hover:text-gray-600 font-medium transition-colors mt-2">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-black/60 z-[100] flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm shadow-2xl transform transition-transform">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">ยืนยันการลบรูปภาพ</h3>
+            <p class="text-gray-500 text-sm mb-6">คุณต้องการลบรูปภาพนี้ออกจากรายการใช่หรือไม่? (ลบแล้วไม่สามารถกู้คืนได้)</p>
+            <div class="space-y-3">
+                <button id="btn-confirm-delete" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium flex items-center justify-center space-x-2 transition-colors">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>ลบรูปภาพ</span>
+                </button>
+                <button id="btn-cancel-delete" class="w-full py-2 text-gray-400 hover:text-gray-600 font-medium transition-colors mt-2">
+                    ยกเลิก
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg z-[110] transition-opacity duration-300 opacity-0 pointer-events-none flex items-center space-x-2">
+        <i class="fa-solid fa-circle-check text-green-400"></i>
+        <span id="toast-msg">ดำเนินการสำเร็จ</span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // โครงสร้างข้อมูลสำหรับแต่ละรูป
+            let imagesData = [];
+            let activeIndex = -1;
+
+            // ตัวแปรเก็บค่าล่าสุดสำหรับใช้ข้ามรูป
+            let globalBrushSize = 160; // ค่าเริ่มต้นที่สเกลใหญ่ขึ้น 20 เท่า (8 * 20)
+            let globalBlurRadius = 3;  // ค่าเริ่มต้นความเบลอ
+
+            // ตัวแปรการซูมและเลื่อน (Pan & Zoom)
+            let transform = { scale: 1, x: 0, y: 0 };
+            
+            // DOM Elements
+            const uploadView = document.getElementById('upload-view');
+            const editorView = document.getElementById('editor-view');
+            const fileInput = document.getElementById('file-input');
+            const dropZone = document.getElementById('drop-zone');
+            
+            const workspace = document.getElementById('workspace');
+            const brushPreview = document.getElementById('brush-preview');
+            const gestureHint = document.getElementById('gesture-hint');
+            
+            const thumbnailWrapper = document.getElementById('thumbnail-container-wrapper');
+            const thumbnailContainer = document.getElementById('thumbnail-container');
+            
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+            const imageCounter = document.getElementById('image-counter');
+            
+            const blurSlider = document.getElementById('blur-slider');
+            const brushSlider = document.getElementById('brush-slider');
+            const blurValLabel = document.getElementById('blur-val');
+            const brushValLabel = document.getElementById('brush-val');
+            
+            const btnUndo = document.getElementById('btn-undo');
+            const btnDelete = document.getElementById('btn-delete');
+            const btnSaveSingle = document.getElementById('btn-save-single');
+            const btnDownloadAll = document.getElementById('btn-download-all');
+            const btnBack = document.getElementById('btn-back');
+
+            const dlModal = document.getElementById('download-modal');
+            const btnDlZip = document.getElementById('btn-dl-zip');
+            const btnDlIndividual = document.getElementById('btn-dl-individual');
+            const btnDlCancel = document.getElementById('btn-dl-cancel');
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+
+            const deleteModal = document.getElementById('delete-modal');
+            const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+            const btnCancelDelete = document.getElementById('btn-cancel-delete');
+
+            // Canvas ส่วนกลางสำหรับการประมวลผล Mask แบบ Soft Edge
+            const renderCanvas = document.createElement('canvas');
+            const renderCtx = renderCanvas.getContext('2d');
+
+            function showToast(msg) {
+                toastMsg.textContent = msg;
+                toast.style.opacity = '1';
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                }, 3000);
+            }
+
+            // --- 1. การอัปโหลดไฟล์ ---
+            dropZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFilesSelect);
+
+            function handleFilesSelect(e) {
+                if (e.target.files && e.target.files.length > 0) {
+                    processFiles(e.target.files);
+                }
+            }
+
+            async function processFiles(files) {
+                // แสดงสถานะโหลด
+                dropZone.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500 mb-3"></i><span class="text-blue-700 font-medium">กำลังเตรียมภาพ...</span>';
+                
+                const validFiles = Array.from(files).filter(f => f.type.match('image.*'));
+                
+                for (let file of validFiles) {
+                    await loadImageData(file);
+                }
+
+                fileInput.value = ''; // Reset
+                
+                if (imagesData.length > 0) {
+                    // เปลี่ยนหน้าไปที่ Editor
+                    uploadView.classList.add('hidden');
+                    editorView.classList.remove('hidden');
+                    editorView.classList.add('flex');
+                    
+                    // ปรับแต่ง UI ตามจำนวนภาพ
+                    if (imagesData.length > 1) {
+                        thumbnailWrapper.classList.remove('hidden');
+                        btnPrev.classList.remove('hidden');
+                        btnNext.classList.remove('hidden');
+                    } else {
+                        thumbnailWrapper.classList.add('hidden');
+                        btnPrev.classList.add('hidden');
+                        btnNext.classList.add('hidden');
+                    }
+
+                    renderThumbnails();
+                    loadToWorkspace(0);
+
+                    // ซ่อนคำแนะนำหลังผ่านไป 4 วินาที
+                    setTimeout(() => {
+                        gestureHint.style.opacity = '0';
+                    }, 4000);
+                } else {
+                    // คืนค่าปุ่มอัปโหลดถ้าไม่มีรูปผ่าน
+                    dropZone.innerHTML = '<i class="fa-solid fa-images text-4xl text-blue-400 mb-3"></i><span class="text-blue-700 font-semibold text-lg">แตะเพื่อเลือกรูปภาพ</span><span class="text-blue-400 text-sm mt-1">เลือกได้หลายรูปพร้อมกัน</span>';
+                }
+            }
+
+            // --- 2. การเตรียมข้อมูลภาพ ---
+            function loadImageData(file) {
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            // เก็บขนาดเดิมของภาพเพื่อความคมชัดสูงสุด
+                            let w = img.width;
+                            let h = img.height;
+
+                            // 1. Base Image Canvas (ภาพคมชัด)
+                            const baseCanvas = document.createElement('canvas');
+                            baseCanvas.width = w; baseCanvas.height = h;
+                            const baseCtx = baseCanvas.getContext('2d');
+                            baseCtx.drawImage(img, 0, 0, w, h);
+
+                            // 2. Final Canvas (สำหรับแสดงผล)
+                            const finalCanvas = document.createElement('canvas');
+                            finalCanvas.width = w; finalCanvas.height = h;
+                            finalCanvas.style.position = 'absolute';
+                            finalCanvas.style.transformOrigin = '0 0';
+                            const finalCtx = finalCanvas.getContext('2d');
+                            finalCtx.drawImage(baseCanvas, 0, 0);
+
+                            // 3. Temp Canvas (หน้ากากวาดเส้น)
+                            const tempCanvas = document.createElement('canvas');
+                            tempCanvas.width = w; 
+                            tempCanvas.height = h;
+                            const tempCtx = tempCanvas.getContext('2d');
+
+                            // 4. Blur Layer Canvas (ภาพเบลอ) - ย่อขนาดลง 70% เพื่อแก้บั๊ก iOS
+                            const blurScale = 0.3;
+                            const blurW = Math.max(1, Math.floor(w * blurScale));
+                            const blurH = Math.max(1, Math.floor(h * blurScale));
+                            const blurCanvas = document.createElement('canvas');
+                            blurCanvas.width = blurW; blurCanvas.height = blurH;
+                            const blurCtx = blurCanvas.getContext('2d');
+                            
+                            const data = {
+                                id: Date.now() + Math.random().toString(36).substr(2, 9),
+                                file: file,
+                                width: w,
+                                height: h,
+                                blurScale: blurScale,
+                                blurW: blurW,
+                                blurH: blurH,
+                                baseCanvas: baseCanvas,
+                                finalCanvas: finalCanvas,
+                                finalCtx: finalCtx,
+                                tempCanvas: tempCanvas,
+                                tempCtx: tempCtx,
+                                blurCanvas: blurCanvas,
+                                blurCtx: blurCtx,
+                                strokes: [],
+                                brushSize: globalBrushSize,
+                                blurRadius: globalBlurRadius,
+                                viewed: false
+                            };
+
+                            // สร้าง Blur Layer เบื้องต้น
+                            generateBlurLayer(data);
+                            
+                            imagesData.push(data);
+                            resolve();
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            function generateBlurLayer(data) {
+                data.blurCtx.clearRect(0, 0, data.blurW, data.blurH);
+                if (data.blurRadius === 0) {
+                    data.blurCtx.drawImage(data.baseCanvas, 0, 0, data.blurW, data.blurH);
+                    return;
+                }
+                // ใส่ filter ลงบน Canvas ขนาดเล็ก ทำให้ iOS ประมวลผลได้แน่นอน 100% ไม่โดนตัดทิ้ง
+                data.blurCtx.filter = `blur(${data.blurRadius * data.blurScale}px)`;
+                data.blurCtx.drawImage(data.baseCanvas, 0, 0, data.blurW, data.blurH);
+                data.blurCtx.filter = 'none';
+            }
+
+            // --- 3. การแสดงผลและการนำทาง (Navigation) ---
+            function renderThumbnails() {
+                thumbnailContainer.innerHTML = '';
+                imagesData.forEach((data, index) => {
+                    const thumb = document.createElement('div');
+                    thumb.className = `w-14 h-14 rounded-lg bg-cover bg-center shrink-0 cursor-pointer transition-all snap-center ${index === activeIndex ? 'border-2 border-blue-500 scale-110 shadow-md' : 'border border-gray-600 opacity-60'}`;
+                    thumb.style.backgroundImage = `url(${data.baseCanvas.toDataURL('image/jpeg', 0.2)})`;
+                    thumb.onclick = () => loadToWorkspace(index);
+                    thumbnailContainer.appendChild(thumb);
+                });
+            }
+
+            function loadToWorkspace(index) {
+                if (index < 0 || index >= imagesData.length) return;
+                
+                const oldCanvas = workspace.querySelector('canvas');
+                if (oldCanvas) oldCanvas.remove();
+
+                const oldIndex = activeIndex;
+                activeIndex = index;
+                const data = imagesData[activeIndex];
+                
+                // สืบทอดค่าจากรูปก่อนหน้าเฉพาะกรณีที่เปิดรูปนี้เป็นครั้งแรก
+                if (oldIndex >= 0 && oldIndex !== activeIndex && !data.viewed) {
+                    const prevData = imagesData[oldIndex];
+                    data.brushSize = prevData.brushSize;
+                    if (data.blurRadius !== prevData.blurRadius) {
+                        data.blurRadius = prevData.blurRadius;
+                        generateBlurLayer(data);
+                        triggerRender(data);
+                    }
+                }
+                
+                data.viewed = true;
+                globalBrushSize = data.brushSize;
+                globalBlurRadius = data.blurRadius;
+                
+                workspace.appendChild(data.finalCanvas);
+                resetPanZoom(data.width, data.height);
+                
+                // อัปเดต UI Controls
+                brushSlider.value = data.brushSize / 20;
+                brushValLabel.textContent = data.brushSize / 20;
+                blurSlider.value = data.blurRadius;
+                blurValLabel.textContent = data.blurRadius;
+                
+                imageCounter.textContent = `${activeIndex + 1} / ${imagesData.length}`;
+                
+                renderThumbnails();
+                
+                const thumbs = thumbnailContainer.children;
+                if (thumbs[activeIndex]) {
+                    thumbs[activeIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }
+
+            btnPrev.onclick = () => loadToWorkspace(activeIndex - 1);
+            btnNext.onclick = () => loadToWorkspace(activeIndex + 1);
+
+            // --- 4. ระบบ Pan & Zoom (Gestures) ---
+            function applyTransform() {
+                if (activeIndex < 0) return;
+                const canvas = imagesData[activeIndex].finalCanvas;
+                canvas.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`;
+            }
+
+            function resetPanZoom(w, h) {
+                const rect = workspace.getBoundingClientRect();
+                const fitScale = Math.min(rect.width / w, rect.height / h) * 0.95;
+                transform.scale = fitScale;
+                transform.x = (rect.width - (w * fitScale)) / 2;
+                transform.y = (rect.height - (h * fitScale)) / 2;
+                applyTransform();
+            }
+
+            function getCanvasPos(clientX, clientY) {
+                const rect = workspace.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                return {
+                    x: (x - transform.x) / transform.scale,
+                    y: (y - transform.y) / transform.scale
+                };
+            }
+
+            function updateAndShowBrushPreview(clientX, clientY) {
+                if (activeIndex < 0) return;
+                const rect = workspace.getBoundingClientRect();
+                const actualSize = imagesData[activeIndex].brushSize;
+                const visualSize = actualSize * transform.scale;
+                
+                brushPreview.style.width = `${visualSize}px`;
+                brushPreview.style.height = `${visualSize}px`;
+                brushPreview.style.left = `${clientX - rect.left}px`;
+                brushPreview.style.top = `${clientY - rect.top}px`;
+                
+                brushPreview.style.display = 'block';
+                brushPreview.style.opacity = '1';
+            }
+
+            function hideBrushPreview() {
+                brushPreview.style.opacity = '0';
+                setTimeout(() => {
+                    if (brushPreview.style.opacity === '0') {
+                        brushPreview.style.display = 'none';
+                    }
+                }, 200);
+            }
+
+            let isDrawing = false;
+            let isPanning = false;
+            
+            let initialPinchDist = 0;
+            let initialScale = 1;
+            let initialPan = { x: 0, y: 0 };
+            let initialPinchCenter = { x: 0, y: 0 };
+            
+            let lastDrawPos = null;
+            let renderPending = false;
+
+            workspace.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (activeIndex < 0) return;
+
+                if (e.touches.length === 1) {
+                    isDrawing = true;
+                    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+                    lastDrawPos = pos;
+                    
+                    imagesData[activeIndex].strokes.push({
+                        size: imagesData[activeIndex].brushSize,
+                        points: [pos]
+                    });
+                    
+                    drawSegment(pos, pos);
+                    updateAndShowBrushPreview(e.touches[0].clientX, e.touches[0].clientY);
+                    
+                } else if (e.touches.length === 2) {
+                    isDrawing = false;
+                    isPanning = true;
+                    hideBrushPreview();
+                    
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    
+                    initialPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    initialScale = transform.scale;
+                    initialPan = { x: transform.x, y: transform.y };
+                    initialPinchCenter = {
+                        x: (t1.clientX + t2.clientX) / 2,
+                        y: (t1.clientY + t2.clientY) / 2
+                    };
+                }
+            }, { passive: false });
+
+            workspace.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (activeIndex < 0) return;
+
+                if (isDrawing && e.touches.length === 1) {
+                    const pos = getCanvasPos(e.touches[0].clientX, e.touches[0].clientY);
+                    const strokes = imagesData[activeIndex].strokes;
+                    strokes[strokes.length - 1].points.push(pos);
+                    
+                    drawSegment(lastDrawPos, pos);
+                    lastDrawPos = pos;
+                    
+                    updateAndShowBrushPreview(e.touches[0].clientX, e.touches[0].clientY);
+
+                } else if (isPanning && e.touches.length === 2) {
+                    const t1 = e.touches[0];
+                    const t2 = e.touches[1];
+                    
+                    const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+                    let newScale = initialScale * (currentDist / initialPinchDist);
+                    
+                    const rect = workspace.getBoundingClientRect();
+                    const minScale = Math.min(rect.width / imagesData[activeIndex].width, rect.height / imagesData[activeIndex].height) * 0.5;
+                    newScale = Math.max(minScale, Math.min(newScale, 10));
+                    
+                    const currentCenter = {
+                        x: (t1.clientX + t2.clientX) / 2,
+                        y: (t1.clientY + t2.clientY) / 2
+                    };
+                    
+                    const rectLeft = rect.left;
+                    const rectTop = rect.top;
+                    
+                    const imgX = (initialPinchCenter.x - rectLeft - initialPan.x) / initialScale;
+                    const imgY = (initialPinchCenter.y - rectTop - initialPan.y) / initialScale;
+                    
+                    transform.scale = newScale;
+                    transform.x = currentCenter.x - rectLeft - (imgX * newScale);
+                    transform.y = currentCenter.y - rectTop - (imgY * newScale);
+                    
+                    applyTransform();
+                }
+            }, { passive: false });
+
+            const stopInteraction = () => {
+                isDrawing = false;
+                isPanning = false;
+                hideBrushPreview();
+            };
+            
+            workspace.addEventListener('touchend', stopInteraction);
+            workspace.addEventListener('touchcancel', stopInteraction);
+
+            // เมาส์ซัพพอร์ต
+            workspace.addEventListener('mousedown', (e) => {
+                if (activeIndex < 0) return;
+                isDrawing = true;
+                const pos = getCanvasPos(e.clientX, e.clientY);
+                lastDrawPos = pos;
+                imagesData[activeIndex].strokes.push({ size: imagesData[activeIndex].brushSize, points: [pos] });
+                drawSegment(pos, pos);
+                updateAndShowBrushPreview(e.clientX, e.clientY);
+            });
+            
+            workspace.addEventListener('mousemove', (e) => {
+                if (activeIndex < 0) return;
+                updateAndShowBrushPreview(e.clientX, e.clientY);
+                
+                if (!isDrawing) return;
+                const pos = getCanvasPos(e.clientX, e.clientY);
+                imagesData[activeIndex].strokes[imagesData[activeIndex].strokes.length - 1].points.push(pos);
+                drawSegment(lastDrawPos, pos);
+                lastDrawPos = pos;
+            });
+
+            workspace.addEventListener('mouseup', stopInteraction);
+            workspace.addEventListener('mouseleave', stopInteraction);
+            
+            // แก้ไข Syntax Error: เพิ่มวงเล็บปิดและปีกกาของการเขียนเมาส์เลื่อน Scroll
+            workspace.addEventListener('wheel', (e) => {
+                if (activeIndex < 0) return;
+                e.preventDefault();
+                
+                const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+                let newScale = transform.scale * zoomFactor;
+                
+                const rect = workspace.getBoundingClientRect();
+                const minScale = Math.min(rect.width / imagesData[activeIndex].width, rect.height / imagesData[activeIndex].height) * 0.5;
+                newScale = Math.max(minScale, Math.min(newScale, 10));
+
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                const imgX = (mouseX - transform.x) / transform.scale;
+                const imgY = (mouseY - transform.y) / transform.scale;
+                
+                transform.scale = newScale;
+                transform.x = mouseX - (imgX * newScale);
+                transform.y = mouseY - (imgY * newScale);
+                
+                applyTransform();
+            }, { passive: false });
+
+            // --- 5. ระบบวาดและผสานภาพ (Compositing Engine) ---
+            
+            function drawSegment(p1, p2) {
+                const data = imagesData[activeIndex];
+                const ctx = data.tempCtx;
+                
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = 'black';
+
+                // แก้บั๊ก iOS ด้วยการซ้อนเส้นไล่ระดับ
+                const size = data.brushSize;
+                const featherAmount = size * 0.2;
+
+                ctx.globalAlpha = 0.15;
+                ctx.lineWidth = size + featherAmount * 2;
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+                ctx.globalAlpha = 0.25;
+                ctx.lineWidth = size + featherAmount;
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+                ctx.globalAlpha = 1.0;
+                ctx.lineWidth = size;
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+
+                triggerRender(data);
+            }
+
+            function triggerRender(data) {
+                if (!renderPending) {
+                    renderPending = true;
+                    requestAnimationFrame(() => {
+                        compositeCanvas(data);
+                        renderPending = false;
+                    });
+                }
+            }
+
+            // ฟังก์ชันสำคัญ: ผสานภาพจริง + หน้ากาก + ภาพเบลอ
+            function compositeCanvas(data) {
+                renderCanvas.width = data.width;
+                renderCanvas.height = data.height;
+                
+                // 1. วาดหน้ากาก (รอยแปรงที่วาดไว้)
+                renderCtx.drawImage(data.tempCanvas, 0, 0);
+                
+                // 2. ใช้ source-in วางภาพเบลอเฉพาะจุดที่วาด (เข้ากันได้กับ iOS 100%)
+                renderCtx.globalCompositeOperation = 'source-in';
+                renderCtx.drawImage(data.blurCanvas, 0, 0, data.blurW, data.blurH, 0, 0, data.width, data.height);
+                
+                renderCtx.globalCompositeOperation = 'source-over';
+
+                // 3. นำไปวาดทับลงบน Final Canvas
+                data.finalCtx.clearRect(0, 0, data.width, data.height);
+                data.finalCtx.drawImage(data.baseCanvas, 0, 0);
+                data.finalCtx.drawImage(renderCanvas, 0, 0);
+            }
+
+            // --- 6. การควบคุม UI ---
+            
+            let previewTimeout;
+            
+            brushSlider.addEventListener('input', (e) => {
+                if (activeIndex < 0) return;
+                const val = parseInt(e.target.value);
+                const actualSize = val * 20; 
+                globalBrushSize = actualSize;
+                imagesData[activeIndex].brushSize = actualSize;
+                brushValLabel.textContent = val;
+
+                brushPreview.style.display = 'block';
+                brushPreview.style.opacity = '1';
+                
+                const visualSize = actualSize * transform.scale;
+                brushPreview.style.width = `${visualSize}px`;
+                brushPreview.style.height = `${visualSize}px`;
+                
+                const rect = workspace.getBoundingClientRect();
+                brushPreview.style.left = `${rect.width / 2}px`;
+                brushPreview.style.top = `${rect.height / 2}px`;
+                
+                clearTimeout(previewTimeout);
+            });
+            
+            brushSlider.addEventListener('change', () => {
+                previewTimeout = setTimeout(() => {
+                    brushPreview.style.opacity = '0';
+                    setTimeout(() => brushPreview.style.display = 'none', 200);
+                }, 500);
+            });
+
+            blurSlider.addEventListener('input', (e) => {
+                if (activeIndex < 0) return;
+                const val = parseInt(e.target.value);
+                blurValLabel.textContent = val;
+            });
+
+            blurSlider.addEventListener('change', (e) => {
+                if (activeIndex < 0) return;
+                const val = parseInt(e.target.value);
+                globalBlurRadius = val;
+                const data = imagesData[activeIndex];
+                data.blurRadius = val;
+                
+                generateBlurLayer(data);
+                triggerRender(data);
+            });
+
+            // ปุ่ม Undo
+            btnUndo.addEventListener('click', () => {
+                if (activeIndex < 0) return;
+                const data = imagesData[activeIndex];
+                
+                if (data.strokes.length === 0) return;
+                data.strokes.pop();
+                
+                data.tempCtx.clearRect(0, 0, data.width, data.height);
+                data.strokes.forEach(stroke => {
+                    if (stroke.points.length < 1) return;
+                    
+                    data.tempCtx.lineCap = 'round';
+                    data.tempCtx.lineJoin = 'round';
+                    data.tempCtx.strokeStyle = 'black';
+                    
+                    const size = stroke.size;
+                    const featherAmount = size * 0.2;
+
+                    [
+                        { alpha: 0.15, width: size + featherAmount * 2 },
+                        { alpha: 0.25, width: size + featherAmount },
+                        { alpha: 1.0, width: size }
+                    ].forEach(layer => {
+                        data.tempCtx.globalAlpha = layer.alpha;
+                        data.tempCtx.lineWidth = layer.width;
+                        data.tempCtx.beginPath();
+                        data.tempCtx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                        for (let i = 1; i < stroke.points.length; i++) {
+                            data.tempCtx.lineTo(stroke.points[i].x, stroke.points[i].y);
+                        }
+                        data.tempCtx.stroke();
+                    });
+                    data.tempCtx.globalAlpha = 1.0;
+                });
+                
+                triggerRender(data);
+            });
+
+            // ปุ่มลบ
+            btnDelete.addEventListener('click', () => {
+                if (activeIndex < 0) return;
+                deleteModal.classList.remove('hidden');
+            });
+
+            btnCancelDelete.addEventListener('click', () => {
+                deleteModal.classList.add('hidden');
+            });
+
+            btnConfirmDelete.addEventListener('click', () => {
+                deleteModal.classList.add('hidden');
+                imagesData.splice(activeIndex, 1);
+                
+                if (imagesData.length === 0) {
+                    btnBack.click();
+                } else {
+                    let newIndex = activeIndex;
+                    if (newIndex >= imagesData.length) newIndex = imagesData.length - 1;
+                    loadToWorkspace(newIndex);
+                }
+            });
+
+            btnBack.addEventListener('click', () => {
+                imagesData = [];
+                activeIndex = -1;
+                const oldCanvas = workspace.querySelector('canvas');
+                if (oldCanvas) oldCanvas.remove();
+                
+                dropZone.innerHTML = '<i class="fa-solid fa-images text-4xl text-blue-400 mb-3"></i><span class="text-blue-700 font-semibold text-lg">แตะเพื่อเลือกรูปภาพ</span><span class="text-blue-400 text-sm mt-1">เลือกได้หลายรูปพร้อมกัน</span>';
+                
+                editorView.classList.remove('flex');
+                editorView.classList.add('hidden');
+                uploadView.classList.remove('hidden');
+            });
+
+            // --- 7. การดาวน์โหลดรูปภาพ ---
+            function downloadImage(data) {
+                const dataUrl = data.finalCanvas.toDataURL('image/jpeg', 1.0); // 100% Quality
+                const originalName = data.file.name;
+                const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+                const newFileName = `${nameWithoutExt}_safe.jpg`;
+
+                const link = document.createElement('a');
+                link.download = newFileName;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            btnSaveSingle.addEventListener('click', () => {
+                if (activeIndex < 0) return;
+                
+                const originalText = btnSaveSingle.innerHTML;
+                btnSaveSingle.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>กำลังบันทึก...</span>';
+                
+                setTimeout(() => {
+                    downloadImage(imagesData[activeIndex]);
+                    btnSaveSingle.innerHTML = '<i class="fa-solid fa-check-circle"></i><span>บันทึกสำเร็จ</span>';
+                    btnSaveSingle.classList.replace('bg-blue-600', 'bg-green-500');
+                    btnSaveSingle.classList.replace('hover:bg-blue-700', 'hover:bg-green-600');
+                    
+                    setTimeout(() => {
+                        btnSaveSingle.innerHTML = originalText;
+                        btnSaveSingle.classList.replace('bg-green-500', 'bg-blue-600');
+                        btnSaveSingle.classList.replace('hover:bg-green-600', 'hover:bg-blue-700');
+                    }, 2000);
+                }, 100);
+            });
+
+            btnDownloadAll.addEventListener('click', () => {
+                if (imagesData.length === 0) return;
+                dlModal.classList.remove('hidden');
+            });
+
+            btnDlCancel.addEventListener('click', () => {
+                dlModal.classList.add('hidden');
+            });
+
+            btnDlIndividual.addEventListener('click', () => {
+                dlModal.classList.add('hidden');
+                
+                const originalText = btnDownloadAll.innerHTML;
+                btnDownloadAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                btnDownloadAll.disabled = true;
+
+                let index = 0;
+                function triggerNext() {
+                    if (index < imagesData.length) {
+                        downloadImage(imagesData[index]);
+                        index++;
+                        setTimeout(triggerNext, 600);
+                    } else {
+                        btnDownloadAll.innerHTML = originalText;
+                        btnDownloadAll.disabled = false;
+                        showToast('ดาวน์โหลดครบทุกรูปแล้วครับ');
+                    }
+                }
+                triggerNext();
+            });
+
+            btnDlZip.addEventListener('click', async () => {
+                dlModal.classList.add('hidden');
+                
+                const originalText = btnDownloadAll.innerHTML;
+                btnDownloadAll.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                btnDownloadAll.disabled = true;
+
+                try {
+                    const zip = new JSZip();
+                    
+                    for (let i = 0; i < imagesData.length; i++) {
+                        const data = imagesData[i];
+                        const dataUrl = data.finalCanvas.toDataURL('image/jpeg', 1.0);
+                        const base64Data = dataUrl.replace(/^data:image\/jpeg;base64,/, "");
+                        
+                        const originalName = data.file.name;
+                        const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+                        zip.file(`${nameWithoutExt}_safe.jpg`, base64Data, {base64: true});
+                    }
+
+                    const content = await zip.generateAsync({type: "blob"});
+                    const link = document.createElement('a');
+                    link.download = "SafeImages.zip";
+                    link.href = URL.createObjectURL(content);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    showToast('ดาวน์โหลด ZIP สำเร็จ');
+                } catch (e) {
+                    console.error("ZIP Error: ", e);
+                    showToast('เกิดข้อผิดพลาดในการสร้าง ZIP');
+                }
+
+                btnDownloadAll.innerHTML = originalText;
+                btnDownloadAll.disabled = false;
+            });
+
+        });
+    </script>
+</body>
+</html>
