@@ -405,7 +405,9 @@
                     return;
                 }
                 // ใส่ filter ลงบน Canvas ขนาดเล็ก ทำให้ iOS ประมวลผลได้แน่นอน 100% ไม่โดนตัดทิ้ง
-                data.blurCtx.filter = `blur(${data.blurRadius * data.blurScale}px)`;
+                // แก้ไข: ถอดตัวคูณลดทอนออก เพื่อระเบิดพลังเบลอให้แรงขึ้นกว่าเดิม 3.3 เท่า 
+                // ทำให้ภาพขนาดใหญ่ 12MP จากมือถือ ก็สามารถถูกเบลอจนมองไม่เห็นรายละเอียดได้มิดชิด
+                data.blurCtx.filter = `blur(${data.blurRadius}px)`;
                 data.blurCtx.drawImage(data.baseCanvas, 0, 0, data.blurW, data.blurH);
                 data.blurCtx.filter = 'none';
             }
