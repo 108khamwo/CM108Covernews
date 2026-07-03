@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : รองรับ ios 26.5 - เพิ่มความเร็ว</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : 3 ก.ค. 69 [แก้ไขราคาน้ำมันดีเซล]</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -193,6 +193,15 @@
             { id: 'g91', name: 'แก๊สโซฮอล์ 91', color: 'bg-teal-500', yPos: 0.705, offsetY: -6 }  // Y = 840px
         ];
 
+
+        // เก็บราคาดีเซล 2 ค่าที่ได้จาก API เพื่อให้ผู้ใช้สลับเองได้
+        // กรณีแหล่งข้อมูลต้นฉบับสลับค่าดีเซลธรรมดากับดีเซลพรีเมียม
+        const fetchedDieselPrices = {
+            primary: null,
+            alternate: null,
+            using: 'primary'
+        };
+
         // สร้าง Input Fields อัตโนมัติ
         const fuelInputsContainer = document.getElementById('fuelInputs');
         
@@ -203,6 +212,13 @@
                 <div class="flex items-center mb-3">
                     <div class="w-4 h-4 rounded-full ${fuel.color} mr-2"></div>
                     <span class="font-bold text-gray-800 text-lg">${fuel.name}</span>
+                    ${fuel.id === 'diesel' ? `
+                        <button type="button" id="dieselSourceSwapBtn" onclick="toggleFetchedDieselPrice()"
+                            class="hidden ml-auto bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 text-xs font-bold py-1.5 px-3 rounded-lg transition-colors shadow-sm"
+                            title="สลับค่าราคาดีเซลที่ดึงมาจากแหล่งข้อมูล">
+                            สลับค่าดีเซล
+                        </button>
+                    ` : ''}
                 </div>
                 <div class="grid grid-cols-[1fr_auto_1fr_1fr] gap-2 items-end">
                     <div>
@@ -246,6 +262,43 @@
             document.getElementById('dateTimeText').value = `มีผล ${d} ${m} ${y} เวลา 05.00 น.`;
         }
 
+        // อัปเดตข้อความและสถานะปุ่มสลับราคาดีเซลจาก API
+        function updateDieselSourceSwapButton() {
+            const btn = document.getElementById('dieselSourceSwapBtn');
+            if (!btn) return;
+
+            const primary = fetchedDieselPrices.primary;
+            const alternate = fetchedDieselPrices.alternate;
+            const hasTwoPrices = Number.isFinite(primary) && Number.isFinite(alternate) && Math.abs(primary - alternate) > 0.001;
+
+            if (!hasTwoPrices) {
+                btn.classList.add('hidden');
+                return;
+            }
+
+            const nextPrice = fetchedDieselPrices.using === 'primary' ? alternate : primary;
+            btn.textContent = `สลับเป็น ${nextPrice.toFixed(2)}`;
+            btn.title = `สลับค่าดีเซลที่ดึงมาระหว่าง ${primary.toFixed(2)} และ ${alternate.toFixed(2)} บาท`;
+            btn.classList.remove('hidden');
+        }
+
+        // สลับเฉพาะค่า "ราคาเดิม" ของดีเซลระหว่าง 2 ค่าที่ API ส่งมา
+        function toggleFetchedDieselPrice() {
+            const primary = fetchedDieselPrices.primary;
+            const alternate = fetchedDieselPrices.alternate;
+
+            if (!Number.isFinite(primary) || !Number.isFinite(alternate)) {
+                showModal('แจ้งเตือน', 'ยังไม่มีราคาดีเซลอีกค่าจากแหล่งข้อมูลให้สลับ กรุณากดดึงราคาปัจจุบันก่อนครับ');
+                return;
+            }
+
+            fetchedDieselPrices.using = fetchedDieselPrices.using === 'primary' ? 'alternate' : 'primary';
+            const selectedPrice = fetchedDieselPrices[fetchedDieselPrices.using];
+            document.getElementById('old_diesel').value = selectedPrice.toFixed(2);
+            calculateDiff('diesel');
+            updateDieselSourceSwapButton();
+        }
+
         async function fetchChiangMaiPrices() {
             const btn = document.getElementById('fetchPriceBtn');
             const originalText = btn.innerHTML;
@@ -283,8 +336,20 @@
                     return findStandardPrice(['diesel', 'diesel', 'ดีเซล']);
                 };
 
+                const getAlternateDieselPrice = () => {
+                    return findStandardPrice(['premium_diesel', 'diesel_premium', 'premiumDiesel', 'ดีเซลพรีเมียม']);
+                };
+
+                const standardDieselPrice = getStandardDieselPrice();
+                const alternateDieselPrice = getAlternateDieselPrice();
+
+                // คงค่าเริ่มต้นตามการทำงานเดิม และเก็บอีกค่าจาก API ไว้สำหรับปุ่มสลับ
+                fetchedDieselPrices.primary = standardDieselPrice;
+                fetchedDieselPrices.alternate = alternateDieselPrice;
+                fetchedDieselPrices.using = 'primary';
+
                 const priceMap = {
-                    'diesel': getStandardDieselPrice(),
+                    'diesel': standardDieselPrice,
                     'e85': findStandardPrice(['gasohol_e85', 'gasoholE85', 'e85', 'แก๊สโซฮอล์ E85']),
                     'e20': findStandardPrice(['gasohol_e20', 'gasoholE20', 'e20', 'แก๊สโซฮอล์ E20']),
                     'g95': findStandardPrice(['gasohol_95', 'gasohol95', 'e10_95', 'แก๊สโซฮอล์ 95']),
@@ -300,6 +365,8 @@
                         updatedCount++;
                     }
                 });
+
+                updateDieselSourceSwapButton();
                 
                 saveData();
                 if (updatedCount > 0) showModal('สำเร็จ', 'ดึงข้อมูลราคาน้ำมันปัจจุบัน (+0.7 บาท อ.เมืองเชียงใหม่) สำเร็จ!');
