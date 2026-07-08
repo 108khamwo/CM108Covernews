@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : 8.7.69 เพิ่มระบบดึงข้อมูลสำรอง</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : เพิ่มระบบดึงข้อมูลสำรอง 8.7.69</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -104,7 +104,7 @@
                     <div id="oilSourceButtons" class="grid grid-cols-3 gap-2">
                         <button type="button" data-source="auto" onclick="setOilSource('auto')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">อัตโนมัติ</button>
                         <button type="button" data-source="bangchak" onclick="setOilSource('bangchak')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">บางจาก</button>
-                        <button type="button" data-source="chnwt" onclick="setOilSource('chnwt')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">ไทยออยล์</button>
+                        <button type="button" data-source="chnwt" onclick="setOilSource('chnwt')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">kapook</button>
                     </div>
                 </div>
             </div>
@@ -224,7 +224,7 @@
         const oilSourceLabels = {
             auto: 'อัตโนมัติ',
             bangchak: 'บางจาก',
-            chnwt: 'ไทยออยล์'
+            chnwt: 'kapook'
         };
         let selectedOilSource = localStorage.getItem('oilSourceChoice') || 'auto';
         if (!oilSourceLabels[selectedOilSource]) {
@@ -506,10 +506,10 @@
                 'g91': findStandardPrice(['gasohol_91', 'gasohol91', 'e10_91', 'แก๊สโซฮอล์ 91'])
             };
 
-            if (!hasAnyPrice(priceMap)) throw new Error('ไทยออยล์ไม่มีราคาที่อ่านได้');
+            if (!hasAnyPrice(priceMap)) throw new Error('kapookไม่มีราคาที่อ่านได้');
 
             return {
-                sourceName: 'ไทยออยล์',
+                sourceName: 'kapook',
                 sourceNote: '',
                 priceMap,
                 dieselPrimary: regularDieselPrice,
@@ -577,7 +577,7 @@
                 'g91': findBangchakPrice(rows, 'g91')
             };
 
-            // ราคาบางจากเป็นราคากรุงเทพฯ/ยังไม่รวมภาษีบำรุงท้องถิ่น จึงบวก offset เชียงใหม่เหมือนไทยออยล์
+            // ราคาบางจากเป็นราคากรุงเทพฯ/ยังไม่รวมภาษีบำรุงท้องถิ่น จึงบวก offset เชียงใหม่เหมือนkapook
             const cmOffset = 0.7;
             Object.keys(priceMap).forEach(key => {
                 if (Number.isFinite(priceMap[key])) priceMap[key] += cmOffset;
@@ -792,9 +792,9 @@
                 console.warn('Bangchak primary source failed:', error);
             }
 
-            // ถ้าบางจากใช้งานไม่ได้ ค่อยลองไทยออยล์
+            // ถ้าบางจากใช้งานไม่ได้ ค่อยลองkapook
             if (!result) {
-                btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> บางจากใช้ไม่ได้ กำลังลองไทยออยล์...`;
+                btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> บางจากใช้ไม่ได้ กำลังลองkapook...`;
                 try {
                     result = await fetchChnwtOilPrices();
                     result.usedFallback = true;
