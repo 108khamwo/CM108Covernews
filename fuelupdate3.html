@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : เพิ่มระบบดึงข้อมูลสำรอง 8.7.69</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : เพิ่มระบบดึงข้อมูลสำรอง</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -96,7 +96,7 @@
                 <button type="button" onclick="toggleOilSourceMenu()" class="w-full flex items-center justify-between gap-2 text-left">
                     <span class="text-xs text-gray-600 font-bold">แหล่งดึงข้อมูล</span>
                     <span class="flex items-center gap-2">
-                        <span id="oilSourceCurrentText" class="text-[10px] bg-white text-blue-700 border border-blue-100 px-2 py-1 rounded-full font-bold">อัตโนมัติ</span>
+                        <span id="oilSourceCurrentText" class="text-[10px] bg-white text-blue-700 border border-blue-100 px-2 py-1 rounded-full font-bold">บางจาก</span>
                         <svg id="oilSourceChevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 transition-transform duration-200"><path d="m6 9 6 6 6-6"/></svg>
                     </span>
                 </button>
@@ -231,6 +231,9 @@
             selectedOilSource = 'auto';
             localStorage.setItem('oilSourceChoice', selectedOilSource);
         }
+        // ใช้แสดงชื่อแหล่งข้อมูลจริงล่าสุด เช่น บางจาก หรือ kapook
+        // โดยไม่เปลี่ยนตัวเลือกอัตโนมัติที่ผู้ใช้ตั้งไว้
+        let oilSourceDisplayOverride = null;
 
         function toggleOilSourceMenu(forceOpen = null) {
             const menu = document.getElementById('oilSourceMenu');
@@ -244,6 +247,7 @@
         function setOilSource(source) {
             selectedOilSource = oilSourceLabels[source] ? source : 'auto';
             localStorage.setItem('oilSourceChoice', selectedOilSource);
+            oilSourceDisplayOverride = null;
             updateOilSourceButtons();
             toggleOilSourceMenu(false);
 
@@ -263,13 +267,14 @@
             });
 
             const label = oilSourceLabels[selectedOilSource] || oilSourceLabels.auto;
+            const displayLabel = oilSourceDisplayOverride || (selectedOilSource === 'auto' ? 'บางจาก' : label);
             const currentText = document.getElementById('oilSourceCurrentText');
-            if (currentText) currentText.innerText = label;
+            if (currentText) currentText.innerText = displayLabel;
 
             const fetchBtn = document.getElementById('fetchPriceBtn');
             if (fetchBtn && !fetchBtn.disabled) {
                 fetchBtn.title = selectedOilSource === 'auto'
-                    ? 'ดึงข้อมูลอัตโนมัติ'
+                    ? 'ดึงข้อมูลจาก บางจากก่อน หากไม่ได้ค่อยลอง kapook'
                     : `ดึงข้อมูลจาก ${label}`;
             }
         }
@@ -813,7 +818,9 @@
             const originalText = btn.innerHTML;
             const sourceKey = selectedOilSource || 'auto';
             const sourceLabel = oilSourceLabels[sourceKey] || oilSourceLabels.auto;
-            const loadingLabel = sourceKey === 'auto' ? 'อัตโนมัติ' : sourceLabel;
+            const loadingLabel = sourceKey === 'auto' ? 'บางจาก' : sourceLabel;
+            oilSourceDisplayOverride = null;
+            updateOilSourceButtons();
 
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูลจาก ${loadingLabel}...`;
             btn.disabled = true;
@@ -830,6 +837,8 @@
                 const updatedCount = applyFetchedOilPrices(result);
                 if (updatedCount > 0) {
                     const shownSourceLabel = result.sourceName || sourceLabel || 'แหล่งข้อมูล';
+                    oilSourceDisplayOverride = shownSourceLabel;
+                    updateOilSourceButtons();
                     showModal('สำเร็จ', `ดึงข้อมูลมาจาก ${shownSourceLabel}`);
                 } else {
                     showModal('แจ้งเตือน', 'ดึงข้อมูลได้ แต่ไม่พบราคาน้ำมันมาตรฐานในฐานข้อมูล กรุณากรอกเองชั่วคราวครับ');
