@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (2026)</title>
+    <title>ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (แบบใหม่)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- โหลดฟอนต์ Prompt เข้ามาใช้งาน (น้ำหนัก 600, 700 สำหรับ Bold) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : 8.7.69 เพิ่มระบบดึงข้อมูลสำรอง</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : เพิ่มระบบดึงข้อมูลสำรอง</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -88,6 +88,24 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
                         ดึงราคาปัจจุบัน
                     </button>
+                </div>
+            </div>
+
+            <!-- เลือกแหล่งดึงข้อมูล (ซ่อนไว้ก่อน กดเปิดจึงแสดงตัวเลือก) -->
+            <div class="mb-5 bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <button type="button" onclick="toggleOilSourceMenu()" class="w-full flex items-center justify-between gap-2 text-left">
+                    <span class="text-xs text-gray-600 font-bold">แหล่งดึงข้อมูล</span>
+                    <span class="flex items-center gap-2">
+                        <span id="oilSourceCurrentText" class="text-[10px] bg-white text-blue-700 border border-blue-100 px-2 py-1 rounded-full font-bold">อัตโนมัติ</span>
+                        <svg id="oilSourceChevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400 transition-transform duration-200"><path d="m6 9 6 6 6-6"/></svg>
+                    </span>
+                </button>
+                <div id="oilSourceMenu" class="hidden mt-3">
+                    <div id="oilSourceButtons" class="grid grid-cols-3 gap-2">
+                        <button type="button" data-source="auto" onclick="setOilSource('auto')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">อัตโนมัติ</button>
+                        <button type="button" data-source="bangchak" onclick="setOilSource('bangchak')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">บางจาก</button>
+                        <button type="button" data-source="chnwt" onclick="setOilSource('chnwt')" class="oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors">ไทยออยล์</button>
+                    </div>
                 </div>
             </div>
 
@@ -201,6 +219,60 @@
             alternate: null,
             using: 'primary'
         };
+
+        // เลือกแหล่งดึงข้อมูล: ค่าเริ่มต้นยังเป็นอัตโนมัติ โดยเริ่มจากบางจากก่อน
+        const oilSourceLabels = {
+            auto: 'อัตโนมัติ',
+            bangchak: 'บางจาก',
+            chnwt: 'ไทยออยล์'
+        };
+        let selectedOilSource = localStorage.getItem('oilSourceChoice') || 'auto';
+        if (!oilSourceLabels[selectedOilSource]) {
+            selectedOilSource = 'auto';
+            localStorage.setItem('oilSourceChoice', selectedOilSource);
+        }
+
+        function toggleOilSourceMenu(forceOpen = null) {
+            const menu = document.getElementById('oilSourceMenu');
+            const chevron = document.getElementById('oilSourceChevron');
+            if (!menu) return;
+            const shouldOpen = forceOpen === null ? menu.classList.contains('hidden') : !!forceOpen;
+            menu.classList.toggle('hidden', !shouldOpen);
+            if (chevron) chevron.style.transform = shouldOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
+        function setOilSource(source) {
+            selectedOilSource = oilSourceLabels[source] ? source : 'auto';
+            localStorage.setItem('oilSourceChoice', selectedOilSource);
+            updateOilSourceButtons();
+            toggleOilSourceMenu(false);
+
+            // เมื่อผู้ใช้เลือกแหล่งดึงข้อมูล ให้ดึงราคาจากแหล่งนั้นทันที
+            setTimeout(() => {
+                const fetchBtn = document.getElementById('fetchPriceBtn');
+                if (fetchBtn && !fetchBtn.disabled) fetchChiangMaiPrices();
+            }, 80);
+        }
+
+        function updateOilSourceButtons() {
+            document.querySelectorAll('.oil-source-btn').forEach(btn => {
+                const active = btn.dataset.source === selectedOilSource;
+                btn.className = active
+                    ? 'oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'oil-source-btn text-xs font-bold py-2 px-2 rounded-lg border transition-colors bg-white text-gray-600 border-gray-200 hover:bg-blue-50 hover:text-blue-700';
+            });
+
+            const label = oilSourceLabels[selectedOilSource] || oilSourceLabels.auto;
+            const currentText = document.getElementById('oilSourceCurrentText');
+            if (currentText) currentText.innerText = label;
+
+            const fetchBtn = document.getElementById('fetchPriceBtn');
+            if (fetchBtn && !fetchBtn.disabled) {
+                fetchBtn.title = selectedOilSource === 'auto'
+                    ? 'ดึงข้อมูลอัตโนมัติ'
+                    : `ดึงข้อมูลจาก ${label}`;
+            }
+        }
 
         // Proxy สำรอง: ใช้ Worker เดิมที่ระบบนี้ใช้โหลดภาพอยู่แล้วก่อน
         // เพื่อช่วยแก้ปัญหา CORS/เปิดไฟล์จากมือถือ แล้วค่อยลองตัวกลางสาธารณะอื่น ๆ
@@ -434,10 +506,10 @@
                 'g91': findStandardPrice(['gasohol_91', 'gasohol91', 'e10_91', 'แก๊สโซฮอล์ 91'])
             };
 
-            if (!hasAnyPrice(priceMap)) throw new Error('แหล่งหลักไม่มีราคาที่อ่านได้');
+            if (!hasAnyPrice(priceMap)) throw new Error('ไทยออยล์ไม่มีราคาที่อ่านได้');
 
             return {
-                sourceName: 'แหล่งหลัก',
+                sourceName: 'ไทยออยล์',
                 sourceNote: '',
                 priceMap,
                 dieselPrimary: regularDieselPrice,
@@ -505,7 +577,7 @@
                 'g91': findBangchakPrice(rows, 'g91')
             };
 
-            // ราคาบางจากเป็นราคากรุงเทพฯ/ยังไม่รวมภาษีบำรุงท้องถิ่น จึงบวก offset เชียงใหม่เหมือนแหล่งหลัก
+            // ราคาบางจากเป็นราคากรุงเทพฯ/ยังไม่รวมภาษีบำรุงท้องถิ่น จึงบวก offset เชียงใหม่เหมือนไทยออยล์
             const cmOffset = 0.7;
             Object.keys(priceMap).forEach(key => {
                 if (Number.isFinite(priceMap[key])) priceMap[key] += cmOffset;
@@ -701,60 +773,76 @@
             return updatedCount;
         }
 
+        async function fetchSelectedOilSourceOnly(sourceKey) {
+            if (sourceKey === 'bangchak') return await fetchBangchakOilPrices();
+            if (sourceKey === 'chnwt') return await fetchChnwtOilPrices();
+            throw new Error('ยังไม่ได้เลือกแหล่งข้อมูลที่ถูกต้อง');
+        }
+
+        async function fetchAutoOilPrices(btn) {
+            let result = null;
+            let bangchakErrorMessage = '';
+            let mainSourceErrorMessage = '';
+
+            // ใช้บางจากเป็นแหล่งหลักก่อนตามต้องการ
+            try {
+                result = await fetchBangchakOilPrices();
+            } catch (error) {
+                bangchakErrorMessage = error.message || String(error);
+                console.warn('Bangchak primary source failed:', error);
+            }
+
+            // ถ้าบางจากใช้งานไม่ได้ ค่อยลองไทยออยล์
+            if (!result) {
+                btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> บางจากใช้ไม่ได้ กำลังลองไทยออยล์...`;
+                try {
+                    result = await fetchChnwtOilPrices();
+                    result.usedFallback = true;
+                    result.primaryErrorMessage = bangchakErrorMessage;
+                } catch (error) {
+                    mainSourceErrorMessage = error.message || String(error);
+                    console.warn('Secondary oil source failed:', error);
+                }
+            }
+
+            return result;
+        }
+
         async function fetchChiangMaiPrices() {
             const btn = document.getElementById('fetchPriceBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูลจากบางจาก...`;
+            const sourceKey = selectedOilSource || 'auto';
+            const sourceLabel = oilSourceLabels[sourceKey] || oilSourceLabels.auto;
+            const loadingLabel = sourceKey === 'auto' ? 'อัตโนมัติ' : sourceLabel;
+
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูลจาก ${loadingLabel}...`;
             btn.disabled = true;
 
             try {
                 let result = null;
-                let bangchakErrorMessage = '';
-                let mainSourceErrorMessage = '';
 
-                // ใช้บางจากเป็นแหล่งหลักก่อนตามต้องการ
-                try {
-                    result = await fetchBangchakOilPrices();
-                } catch (error) {
-                    bangchakErrorMessage = error.message || String(error);
-                    console.warn('Bangchak primary source failed:', error);
-                }
-
-                // ถ้าบางจากใช้งานไม่ได้ ค่อยลองแหล่งเดิม
-                if (!result) {
-                    btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> บางจากใช้ไม่ได้ กำลังลองแหล่งสำรอง...`;
-                    try {
-                        result = await fetchChnwtOilPrices();
-                        result.usedFallback = true;
-                        result.primaryErrorMessage = bangchakErrorMessage;
-                    } catch (error) {
-                        mainSourceErrorMessage = error.message || String(error);
-                        console.warn('Secondary oil source failed:', error);
-                    }
-                }
-
-                // ถ้ายังไม่ได้ ค่อยลอง ปตท. เป็นลำดับสุดท้าย
-                if (!result) {
-                    btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังลอง ปตท....`;
-                    result = await fetchPttorOilPrices();
-                    result.usedFallback = true;
-                    result.primaryErrorMessage = [bangchakErrorMessage, mainSourceErrorMessage].filter(Boolean).join(' / ');
+                if (sourceKey === 'auto') {
+                    result = await fetchAutoOilPrices(btn);
+                } else {
+                    result = await fetchSelectedOilSourceOnly(sourceKey);
                 }
 
                 const updatedCount = applyFetchedOilPrices(result);
                 if (updatedCount > 0) {
-                    const sourceLabel = result.sourceName || 'แหล่งข้อมูล';
-                    showModal('สำเร็จ', `ดึงข้อมูลมาจาก ${sourceLabel}`);
+                    const shownSourceLabel = result.sourceName || sourceLabel || 'แหล่งข้อมูล';
+                    showModal('สำเร็จ', `ดึงข้อมูลมาจาก ${shownSourceLabel}`);
                 } else {
                     showModal('แจ้งเตือน', 'ดึงข้อมูลได้ แต่ไม่พบราคาน้ำมันมาตรฐานในฐานข้อมูล กรุณากรอกเองชั่วคราวครับ');
                 }
 
             } catch (error) {
                 console.error('Fetch error:', error);
-                showModal('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจากบางจากและแหล่งสำรองได้ในขณะนี้: ' + error.message + '\nกรุณากรอกราคาเดิมด้วยตนเองครับ');
+                const errorSourceLabel = sourceKey === 'auto' ? 'แหล่งข้อมูลทั้งหมด' : sourceLabel;
+                showModal('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจาก ' + errorSourceLabel + ' ได้ในขณะนี้\nกรุณาเลือกแหล่งข้อมูลอื่น หรือกรอกราคาเดิมด้วยตนเองครับ');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+                updateOilSourceButtons();
             }
         }
 
@@ -1126,6 +1214,7 @@
         window.onload = () => {
             setTomorrowDate(); 
             loadData();             
+            updateOilSourceButtons();
             setupEnterNavigation(); 
             document.getElementById('imageUpload').addEventListener('change', function(e) {
                 const file = e.target.files[0];
