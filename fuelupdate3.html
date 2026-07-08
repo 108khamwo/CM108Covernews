@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (แบบใหม่)</title>
+    <title>ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (2026)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- โหลดฟอนต์ Prompt เข้ามาใช้งาน (น้ำหนัก 600, 700 สำหรับ Bold) -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
@@ -51,7 +51,7 @@
     <!-- Header -->
     <div class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-10">
         <h1 class="text-xl font-bold text-center" style="font-family: 'Cloud', sans-serif;">ระบบสร้างรูปแจ้งปรับราคาน้ำมัน (กรอบใหม่)</h1>
-        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : ปรับแก้ราคาดีเซล</p>
+        <p class="text-center text-blue-200 text-xs mt-1" style="font-family: 'Prompt', sans-serif;">อัปเดตระบบ : 8.7.69 เพิ่มระบบดึงข้อมูลสำรอง</p>
     </div>
 
     <div class="max-w-xl mx-auto mt-6 px-4">
@@ -194,13 +194,24 @@
         ];
 
 
-        // เก็บราคาดีเซล 2 ค่าที่ได้จาก API เพื่อให้ผู้ใช้สลับเองได้
+        // เก็บราคาดีเซล 2 ค่าที่ดึงได้ เพื่อให้ผู้ใช้สลับเองได้
         // กรณีแหล่งข้อมูลต้นฉบับสลับค่าดีเซลธรรมดากับดีเซลพรีเมียม
         const fetchedDieselPrices = {
             primary: null,
             alternate: null,
             using: 'primary'
         };
+
+        // Proxy สำรอง: ใช้ Worker เดิมที่ระบบนี้ใช้โหลดภาพอยู่แล้วก่อน
+        // เพื่อช่วยแก้ปัญหา CORS/เปิดไฟล์จากมือถือ แล้วค่อยลองตัวกลางสาธารณะอื่น ๆ
+        const existingWorkerProxy = 'https://img-proxy.108khamwo.workers.dev/?url=';
+        const getProxyUrls = (targetUrl) => ([
+            targetUrl,
+            existingWorkerProxy + encodeURIComponent(targetUrl),
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl),
+            'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(targetUrl),
+            'https://corsproxy.io/?url=' + encodeURIComponent(targetUrl)
+        ]);
 
         // สร้าง Input Fields อัตโนมัติ
         const fuelInputsContainer = document.getElementById('fuelInputs');
@@ -262,7 +273,7 @@
             document.getElementById('dateTimeText').value = `มีผล ${d} ${m} ${y} เวลา 05.00 น.`;
         }
 
-        // อัปเดตข้อความและสถานะปุ่มสลับราคาดีเซลจาก API
+        // อัปเดตข้อความและสถานะปุ่มสลับราคาดีเซล
         function updateDieselSourceSwapButton() {
             const btn = document.getElementById('dieselSourceSwapBtn');
             if (!btn) return;
@@ -282,7 +293,7 @@
             btn.classList.remove('hidden');
         }
 
-        // สลับเฉพาะค่า "ราคาเดิม" ของดีเซลระหว่าง 2 ค่าที่ API ส่งมา
+        // สลับเฉพาะค่า "ราคาเดิม" ของดีเซลระหว่าง 2 ค่าที่ดึงมา
         function toggleFetchedDieselPrice() {
             const primary = fetchedDieselPrices.primary;
             const alternate = fetchedDieselPrices.alternate;
@@ -299,89 +310,448 @@
             updateDieselSourceSwapButton();
         }
 
+        function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+            return fetch(url, { ...options, signal: controller.signal })
+                .finally(() => clearTimeout(timeoutId));
+        }
+
+        function parsePriceNumber(value) {
+            if (value === undefined || value === null) return null;
+            if (typeof value === 'object' && value.price !== undefined) value = value.price;
+            const cleaned = String(value).replace(/,/g, '').replace(/[^0-9.\-]/g, '');
+            const num = parseFloat(cleaned);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function decodeHtmlEntities(text) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text || '';
+            return textarea.value;
+        }
+
+        function normalizeFuelText(text) {
+            return String(text || '')
+                .toLowerCase()
+                .replace(/\s+/g, '')
+                .replace(/-/g, '')
+                .trim();
+        }
+
+        function hasAnyPrice(priceMap) {
+            return Object.values(priceMap || {}).some(value => Number.isFinite(value));
+        }
+
+        // เลือกราคาดีเซลธรรมดาจากรายการที่มีชื่อกำกับ โดยเน้น ดีเซล/B7 และตัดพรีเมียมออกก่อน
+        function selectRegularDieselFromNamedCandidates(candidates) {
+            const valid = (candidates || [])
+                .filter(item => item && Number.isFinite(item.price))
+                .map(item => ({
+                    name: String(item.name || ''),
+                    text: normalizeFuelText(item.name || ''),
+                    price: item.price
+                }));
+
+            if (valid.length === 0) return { primary: null, alternate: null };
+
+            const nonPremium = valid.filter(item =>
+                !item.text.includes('พรีเมียม') &&
+                !item.text.includes('premium') &&
+                !item.text.includes('ซูเปอร์') &&
+                !item.text.includes('super')
+            );
+
+            const dieselPool = nonPremium.length ? nonPremium : valid;
+            const preferredRegular = dieselPool.filter(item =>
+                item.text.includes('b7') ||
+                item.text === 'ดีเซล' ||
+                item.text === 'diesel' ||
+                (!item.text.includes('b10') && !item.text.includes('b20') && !item.text.includes('b5'))
+            );
+
+            const primaryPool = preferredRegular.length ? preferredRegular : dieselPool;
+            primaryPool.sort((a, b) => a.price - b.price);
+
+            const primary = primaryPool[0]?.price ?? null;
+            const alternate = valid
+                .filter(item => Number.isFinite(primary) && Math.abs(item.price - primary) > 0.001)
+                .sort((a, b) => b.price - a.price)[0]?.price ?? null;
+
+            return { primary, alternate };
+        }
+
+        async function fetchTextFromCandidates(urls, timeoutMs = 15000) {
+            const errors = [];
+            for (const url of urls) {
+                try {
+                    const response = await fetchWithTimeout(url, {}, timeoutMs);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const text = await response.text();
+                    if (text && text.trim()) return text;
+                    throw new Error('ข้อมูลว่าง');
+                } catch (error) {
+                    errors.push(error.message || String(error));
+                }
+            }
+            throw new Error(errors.join(' / '));
+        }
+
+        async function fetchJsonFromCandidates(urls, timeoutMs = 15000) {
+            const text = await fetchTextFromCandidates(urls, timeoutMs);
+            return JSON.parse(text);
+        }
+
+        async function fetchChnwtOilPrices() {
+            const targetUrl = 'https://api.chnwt.dev/thai-oil-api/latest';
+            const data = await fetchJsonFromCandidates(getProxyUrls(targetUrl), 15000);
+            const ptt = data?.response?.stations?.ptt || data?.stations?.ptt || data?.ptt || {};
+            const cmOffset = 0.7; // พื้นที่ อ.เมืองเชียงใหม่ (+0.7 บาท)
+
+            const findStandardPrice = (keys) => {
+                for (let key of keys) {
+                    const num = parsePriceNumber(ptt[key]);
+                    if (Number.isFinite(num)) return num + cmOffset;
+                }
+                return null;
+            };
+
+            const dieselFieldPrice = findStandardPrice(['diesel', 'ดีเซล']);
+            const premiumDieselFieldPrice = findStandardPrice(['premium_diesel', 'diesel_premium', 'premiumDiesel', 'ดีเซลพรีเมียม']);
+
+            // api.chnwt.dev เคยสลับช่อง diesel / premium_diesel กัน จึงใช้ราคาที่ต่ำกว่าเป็นดีเซลธรรมดา
+            const chnwtDieselPrices = [dieselFieldPrice, premiumDieselFieldPrice]
+                .filter(price => Number.isFinite(price))
+                .sort((a, b) => a - b);
+            const regularDieselPrice = chnwtDieselPrices.length > 0 ? chnwtDieselPrices[0] : null;
+            const alternateDieselPrice = chnwtDieselPrices.length > 1 ? chnwtDieselPrices[chnwtDieselPrices.length - 1] : null;
+
+            const priceMap = {
+                'diesel': regularDieselPrice,
+                'e85': findStandardPrice(['gasohol_e85', 'gasoholE85', 'e85', 'แก๊สโซฮอล์ E85']),
+                'e20': findStandardPrice(['gasohol_e20', 'gasoholE20', 'e20', 'แก๊สโซฮอล์ E20']),
+                'g95': findStandardPrice(['gasohol_95', 'gasohol95', 'e10_95', 'แก๊สโซฮอล์ 95']),
+                'g91': findStandardPrice(['gasohol_91', 'gasohol91', 'e10_91', 'แก๊สโซฮอล์ 91'])
+            };
+
+            if (!hasAnyPrice(priceMap)) throw new Error('แหล่งหลักไม่มีราคาที่อ่านได้');
+
+            return {
+                sourceName: 'แหล่งหลัก',
+                sourceNote: '',
+                priceMap,
+                dieselPrimary: regularDieselPrice,
+                dieselAlternate: alternateDieselPrice
+            };
+        }
+
+        function getBangchakRows(data) {
+            const first = Array.isArray(data) ? data[0] : data;
+            if (!first) return [];
+            let oilList = first.OilList || first.oilList || first.oil_list || [];
+            if (typeof oilList === 'string') {
+                try { oilList = JSON.parse(oilList); }
+                catch (error) { oilList = []; }
+            }
+            return Array.isArray(oilList) ? oilList : [];
+        }
+
+        function bangchakPrice(row) {
+            return parsePriceNumber(row?.PriceToday ?? row?.PriceTomorrow ?? row?.PriceYesterday ?? row?.price ?? row?.Price);
+        }
+
+        function findBangchakPrice(rows, fuelId) {
+            const candidates = [];
+            rows.forEach(row => {
+                const name = normalizeFuelText(row?.OilName || row?.Name || row?.name || '');
+                const price = bangchakPrice(row);
+                if (!Number.isFinite(price)) return;
+
+                if (fuelId === 'e85' && name.includes('e85')) candidates.push(price);
+                if (fuelId === 'e20' && name.includes('e20')) candidates.push(price);
+                if (fuelId === 'g95' && name.includes('95') && name.includes('แก๊สโซฮอล์') && !name.includes('พรีเมียม') && !name.includes('premium')) candidates.push(price);
+                if (fuelId === 'g91' && name.includes('91') && name.includes('แก๊สโซฮอล์') && !name.includes('พรีเมียม') && !name.includes('premium')) candidates.push(price);
+            });
+            return candidates.length ? candidates.sort((a, b) => a - b)[0] : null;
+        }
+
+        async function fetchBangchakOilPrices() {
+            const targetUrl = 'https://oil-price.bangchak.co.th/ApiOilPrice2/th';
+            const data = await fetchJsonFromCandidates(getProxyUrls(targetUrl), 15000);
+            const rows = getBangchakRows(data);
+            if (rows.length === 0) throw new Error('บางจากไม่มีรายการราคาที่อ่านได้');
+
+            const dieselCandidates = [];
+            rows.forEach(row => {
+                const rawName = row?.OilName || row?.Name || row?.name || '';
+                const name = normalizeFuelText(rawName);
+                const price = bangchakPrice(row);
+                if (!Number.isFinite(price)) return;
+
+                if (name.includes('ดีเซล') || name.includes('diesel')) {
+                    dieselCandidates.push({ name: rawName, price });
+                }
+            });
+
+            const selectedDiesel = selectRegularDieselFromNamedCandidates(dieselCandidates);
+            const regularDieselPrice = selectedDiesel.primary;
+            const alternateDieselPrice = selectedDiesel.alternate;
+
+            const priceMap = {
+                'diesel': regularDieselPrice,
+                'e85': findBangchakPrice(rows, 'e85'),
+                'e20': findBangchakPrice(rows, 'e20'),
+                'g95': findBangchakPrice(rows, 'g95'),
+                'g91': findBangchakPrice(rows, 'g91')
+            };
+
+            // ราคาบางจากเป็นราคากรุงเทพฯ/ยังไม่รวมภาษีบำรุงท้องถิ่น จึงบวก offset เชียงใหม่เหมือนแหล่งหลัก
+            const cmOffset = 0.7;
+            Object.keys(priceMap).forEach(key => {
+                if (Number.isFinite(priceMap[key])) priceMap[key] += cmOffset;
+            });
+            const dieselPrimary = Number.isFinite(regularDieselPrice) ? regularDieselPrice + cmOffset : null;
+            const dieselAlternate = Number.isFinite(alternateDieselPrice) ? alternateDieselPrice + cmOffset : null;
+
+            if (!hasAnyPrice(priceMap)) throw new Error('บางจากไม่มีราคาที่อ่านได้');
+
+            return {
+                sourceName: 'บางจาก',
+                sourceNote: '',
+                priceMap,
+                dieselPrimary,
+                dieselAlternate
+            };
+        }
+
+        function buildPttorSoapEnvelope() {
+            return `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <CurrentOilPriceProvincial xmlns="http://www.pttor.com">
+      <Language>thai</Language>
+      <Province>เชียงใหม่</Province>
+    </CurrentOilPriceProvincial>
+  </soap:Body>
+</soap:Envelope>`;
+        }
+
+        async function fetchPttorSoapText(url) {
+            const soapEnvelope = buildPttorSoapEnvelope();
+            const response = await fetchWithTimeout(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/xml; charset=utf-8',
+                    'SOAPAction': '"https://orapiweb.pttor.com/CurrentOilPriceProvincial"'
+                },
+                body: soapEnvelope
+            }, 15000);
+            if (!response.ok) throw new Error('PTT OR SOAP ไม่ตอบสนอง');
+            return await response.text();
+        }
+
+        async function fetchPttorRestTextThroughProxy() {
+            const restUrl = 'https://orapiweb.pttor.com/oilservice/OilPrice.asmx/CurrentOilPriceProvincial?Language=thai&Province=' + encodeURIComponent('เชียงใหม่');
+            try {
+                return await fetchTextFromCandidates(getProxyUrls(restUrl), 15000);
+            } catch (error) {
+                throw new Error('PTT OR REST ผ่านตัวกลางไม่ตอบสนอง');
+            }
+        }
+
+        function parsePttorRows(xmlText) {
+            const outerXml = new DOMParser().parseFromString(xmlText, 'text/xml');
+            const parserError = outerXml.getElementsByTagName('parsererror')[0];
+            if (parserError) throw new Error('อ่าน XML จาก PTT OR ไม่ได้');
+
+            const resultNode = outerXml.getElementsByTagName('CurrentOilPriceProvincialResult')[0]
+                || outerXml.getElementsByTagName('CurrentOilPriceResult')[0];
+            let innerXmlText = resultNode ? resultNode.textContent : xmlText;
+            innerXmlText = decodeHtmlEntities(innerXmlText).trim();
+
+            const innerXml = new DOMParser().parseFromString(innerXmlText, 'text/xml');
+            const fuelNodes = Array.from(innerXml.getElementsByTagName('FUEL'));
+            if (fuelNodes.length === 0) throw new Error('ไม่พบรายการ FUEL จาก PTT OR');
+
+            return fuelNodes.map(node => {
+                const row = {};
+                Array.from(node.children).forEach(child => {
+                    row[child.tagName] = child.textContent;
+                });
+                return row;
+            });
+        }
+
+        function rowSearchText(row) {
+            return normalizeFuelText(Object.entries(row)
+                .filter(([key]) => !/price|date|time/i.test(key))
+                .map(([, value]) => value)
+                .join(' '));
+        }
+
+        function rowPrice(row) {
+            for (const [key, value] of Object.entries(row)) {
+                if (/price|ราคา/i.test(key)) {
+                    const num = parsePriceNumber(value);
+                    if (Number.isFinite(num)) return num;
+                }
+            }
+            return null;
+        }
+
+        function findPttorPrice(rows, fuelId) {
+            const candidates = [];
+            rows.forEach(row => {
+                const text = rowSearchText(row);
+                const price = rowPrice(row);
+                if (!Number.isFinite(price)) return;
+
+                if (fuelId === 'e85' && (text.includes('e85') || text.includes('แก๊สโซฮอล์e85'))) candidates.push(price);
+                if (fuelId === 'e20' && (text.includes('e20') || text.includes('แก๊สโซฮอล์e20'))) candidates.push(price);
+                if (fuelId === 'g95' && (text.includes('95') && (text.includes('แก๊สโซฮอล์') || text.includes('gasohol')) && !text.includes('พรีเมียม') && !text.includes('premium') && !text.includes('ซูเปอร์'))) candidates.push(price);
+                if (fuelId === 'g91' && (text.includes('91') && (text.includes('แก๊สโซฮอล์') || text.includes('gasohol')) && !text.includes('พรีเมียม') && !text.includes('premium') && !text.includes('ซูเปอร์'))) candidates.push(price);
+            });
+            return candidates.length ? candidates.sort((a, b) => a - b)[0] : null;
+        }
+
+        function extractPttorPrices(xmlText) {
+            const rows = parsePttorRows(xmlText);
+            const dieselCandidates = [];
+
+            rows.forEach(row => {
+                const text = rowSearchText(row);
+                const displayName = Object.entries(row)
+                    .filter(([key]) => !/price|date|time/i.test(key))
+                    .map(([, value]) => value)
+                    .join(' ');
+                const price = rowPrice(row);
+                if (!Number.isFinite(price)) return;
+                if (text.includes('ดีเซล') || text.includes('diesel')) dieselCandidates.push({ name: displayName, price });
+            });
+
+            const selectedDiesel = selectRegularDieselFromNamedCandidates(dieselCandidates);
+            const regularDieselPrice = selectedDiesel.primary;
+            const alternateDieselPrice = selectedDiesel.alternate;
+
+            const priceMap = {
+                'diesel': regularDieselPrice,
+                'e85': findPttorPrice(rows, 'e85'),
+                'e20': findPttorPrice(rows, 'e20'),
+                'g95': findPttorPrice(rows, 'g95'),
+                'g91': findPttorPrice(rows, 'g91')
+            };
+
+            if (!hasAnyPrice(priceMap)) throw new Error('PTT OR ไม่มีราคาที่อ่านได้');
+
+            return {
+                sourceName: 'ปตท.',
+                sourceNote: '',
+                priceMap,
+                dieselPrimary: regularDieselPrice,
+                dieselAlternate: alternateDieselPrice
+            };
+        }
+
+        async function fetchPttorOilPrices() {
+            const endpoint = 'https://orapiweb.pttor.com/oilservice/OilPrice.asmx';
+            const proxyEndpoint = 'https://corsproxy.io/?url=' + encodeURIComponent(endpoint);
+            const errors = [];
+
+            try {
+                const xmlText = await fetchPttorSoapText(endpoint);
+                return extractPttorPrices(xmlText);
+            } catch (error) {
+                errors.push(error.message);
+            }
+
+            try {
+                const xmlText = await fetchPttorSoapText(proxyEndpoint);
+                return extractPttorPrices(xmlText);
+            } catch (error) {
+                errors.push(error.message);
+            }
+
+            try {
+                const xmlText = await fetchPttorRestTextThroughProxy();
+                return extractPttorPrices(xmlText);
+            } catch (error) {
+                errors.push(error.message);
+            }
+
+            throw new Error('PTT OR fallback ใช้งานไม่ได้: ' + errors.join(' / '));
+        }
+
+        function applyFetchedOilPrices(result) {
+            fetchedDieselPrices.primary = result.dieselPrimary;
+            fetchedDieselPrices.alternate = result.dieselAlternate;
+            fetchedDieselPrices.using = 'primary';
+
+            let updatedCount = 0;
+            fuels.forEach(fuel => {
+                const priceValue = result.priceMap[fuel.id];
+                if (Number.isFinite(priceValue)) {
+                    document.getElementById(`old_${fuel.id}`).value = priceValue.toFixed(2);
+                    calculateDiff(fuel.id, true);
+                    updatedCount++;
+                }
+            });
+
+            updateDieselSourceSwapButton();
+            saveData();
+            return updatedCount;
+        }
+
         async function fetchChiangMaiPrices() {
             const btn = document.getElementById('fetchPriceBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูล...`;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังดึงข้อมูลจากบางจาก...`;
             btn.disabled = true;
 
             try {
-                let response;
-                const targetUrl = 'https://api.chnwt.dev/thai-oil-api/latest';
-                
+                let result = null;
+                let bangchakErrorMessage = '';
+                let mainSourceErrorMessage = '';
+
+                // ใช้บางจากเป็นแหล่งหลักก่อนตามต้องการ
                 try {
-                    response = await fetch(targetUrl);
-                } catch(e) {
-                    response = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl));
+                    result = await fetchBangchakOilPrices();
+                } catch (error) {
+                    bangchakErrorMessage = error.message || String(error);
+                    console.warn('Bangchak primary source failed:', error);
                 }
-                
-                if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อกับฐานข้อมูลน้ำมันได้');
-                const data = await response.json();
-                
-                const ptt = data?.response?.stations?.ptt || data?.stations?.ptt || data?.ptt || {};
-                const cmOffset = 0.7; // พื้นที่ อ.เมืองเชียงใหม่ (+0.7 บาท)
 
-                const findStandardPrice = (keys) => {
-                    for (let key of keys) {
-                        let val = ptt[key];
-                        if (val !== undefined && val !== null) {
-                            let num = typeof val === 'object' && val.price !== undefined ? parseFloat(val.price) : parseFloat(val);
-                            if (!isNaN(num)) return num + cmOffset;
-                        }
+                // ถ้าบางจากใช้งานไม่ได้ ค่อยลองแหล่งเดิม
+                if (!result) {
+                    btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> บางจากใช้ไม่ได้ กำลังลองแหล่งสำรอง...`;
+                    try {
+                        result = await fetchChnwtOilPrices();
+                        result.usedFallback = true;
+                        result.primaryErrorMessage = bangchakErrorMessage;
+                    } catch (error) {
+                        mainSourceErrorMessage = error.message || String(error);
+                        console.warn('Secondary oil source failed:', error);
                     }
-                    return null;
-                };
+                }
 
-                const getStandardDieselPrice = () => {
-                    return findStandardPrice(['diesel', 'diesel', 'ดีเซล']);
-                };
+                // ถ้ายังไม่ได้ ค่อยลอง ปตท. เป็นลำดับสุดท้าย
+                if (!result) {
+                    btn.innerHTML = `<svg class="animate-spin h-4 w-4 mr-1 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> กำลังลอง ปตท....`;
+                    result = await fetchPttorOilPrices();
+                    result.usedFallback = true;
+                    result.primaryErrorMessage = [bangchakErrorMessage, mainSourceErrorMessage].filter(Boolean).join(' / ');
+                }
 
-                const getAlternateDieselPrice = () => {
-                    return findStandardPrice(['premium_diesel', 'diesel_premium', 'premiumDiesel', 'ดีเซลพรีเมียม']);
-                };
-
-                const standardDieselPrice = getStandardDieselPrice();
-                const alternateDieselPrice = getAlternateDieselPrice();
-
-                // เรียงราคาดีเซลจากน้อยไปมาก เพื่อใช้ราคาที่ต่ำกว่าเป็นค่าเริ่มต้นเสมอ
-                const availableDieselPrices = [standardDieselPrice, alternateDieselPrice]
-                    .filter(price => Number.isFinite(price))
-                    .sort((a, b) => a - b);
-                const lowestDieselPrice = availableDieselPrices.length > 0 ? availableDieselPrices[0] : null;
-                const higherDieselPrice = availableDieselPrices.length > 1 ? availableDieselPrices[availableDieselPrices.length - 1] : null;
-
-                // ราคาต่ำสุดเป็นค่าเริ่มต้น และเก็บราคาที่สูงกว่าไว้สำหรับปุ่มสลับ
-                fetchedDieselPrices.primary = lowestDieselPrice;
-                fetchedDieselPrices.alternate = higherDieselPrice;
-                fetchedDieselPrices.using = 'primary';
-
-                const priceMap = {
-                    'diesel': lowestDieselPrice,
-                    'e85': findStandardPrice(['gasohol_e85', 'gasoholE85', 'e85', 'แก๊สโซฮอล์ E85']),
-                    'e20': findStandardPrice(['gasohol_e20', 'gasoholE20', 'e20', 'แก๊สโซฮอล์ E20']),
-                    'g95': findStandardPrice(['gasohol_95', 'gasohol95', 'e10_95', 'แก๊สโซฮอล์ 95']),
-                    'g91': findStandardPrice(['gasohol_91', 'gasohol91', 'e10_91', 'แก๊สโซฮอล์ 91'])
-                };
-
-                let updatedCount = 0;
-                fuels.forEach(fuel => {
-                    let priceValue = priceMap[fuel.id];
-                    if (priceValue !== null && priceValue !== undefined) {
-                        document.getElementById(`old_${fuel.id}`).value = priceValue.toFixed(2);
-                        calculateDiff(fuel.id, true);
-                        updatedCount++;
-                    }
-                });
-
-                updateDieselSourceSwapButton();
-                
-                saveData();
-                if (updatedCount > 0) showModal('สำเร็จ', 'ดึงข้อมูลราคาน้ำมันปัจจุบัน (+0.7 บาท อ.เมืองเชียงใหม่) สำเร็จ!');
-                else showModal('แจ้งเตือน', 'ดึงข้อมูลได้ แต่ไม่พบราคาน้ำมันมาตรฐานในฐานข้อมูล กรุณากรอกเองชั่วคราวครับ');
+                const updatedCount = applyFetchedOilPrices(result);
+                if (updatedCount > 0) {
+                    const sourceLabel = result.sourceName || 'แหล่งข้อมูล';
+                    showModal('สำเร็จ', `ดึงข้อมูลมาจาก ${sourceLabel}`);
+                } else {
+                    showModal('แจ้งเตือน', 'ดึงข้อมูลได้ แต่ไม่พบราคาน้ำมันมาตรฐานในฐานข้อมูล กรุณากรอกเองชั่วคราวครับ');
+                }
 
             } catch (error) {
                 console.error('Fetch error:', error);
-                showModal('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจากเซิร์ฟเวอร์ได้ในขณะนี้: ' + error.message + '\nกรุณากรอกราคาเดิมด้วยตนเองครับ');
+                showModal('ข้อผิดพลาด', 'ไม่สามารถดึงข้อมูลจากบางจากและแหล่งสำรองได้ในขณะนี้: ' + error.message + '\nกรุณากรอกราคาเดิมด้วยตนเองครับ');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
