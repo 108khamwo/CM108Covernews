@@ -280,21 +280,25 @@
                 // วาดวันที่ด้านล่าง
                 if (bottomDateText.trim()) {
                     ctx.font = `bold 31px Prompt`;
-                    ctx.textAlign = 'center';
+                    // ไม่ใช้ textAlign = center เพราะ Safari บน iOS อาจจัดข้อความภาษาไทยคลาดไปทางขวา
+                    // คำนวณตำแหน่งซ้ายจากความกว้างข้อความจริงแทน เพื่อให้กึ่งกลางตรงกันทุกอุปกรณ์
+                    ctx.textAlign = 'left';
                     ctx.textBaseline = 'middle';
                     ctx.lineJoin = 'round';
                     ctx.miterLimit = 2;
                     
                     const dateY = (canvas.height * 0.755) + dateYOffset; // ตำแหน่ง Y เหนือโลโก้
+                    const dateMetrics = ctx.measureText(bottomDateText);
+                    const dateX = (canvas.width - dateMetrics.width) / 2;
                     
                     // วาดขอบดำ
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 5;
-                    ctx.strokeText(bottomDateText, canvas.width / 2, dateY);
+                    ctx.strokeText(bottomDateText, dateX, dateY);
                     
                     // วาดสีขาวทับ
                     ctx.fillStyle = '#FFFFFF';
-                    ctx.fillText(bottomDateText, canvas.width / 2, dateY);
+                    ctx.fillText(bottomDateText, dateX, dateY);
                 }
 
             }, [bgImage, isFontLoaded, rawText, lineStyles, lineSpacing, globalYOffset, renderTrigger, bottomDateText, dateYOffset]);
