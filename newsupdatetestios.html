@@ -36,6 +36,12 @@
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
         select { -webkit-appearance: none; appearance: none; }
+
+        /* ลดภาระการวาดการ์ดข่าวที่ยังอยู่นอกหน้าจอ โดยไม่เปลี่ยนข้อมูลหรือหน้าตา */
+        .news-card-shell {
+            content-visibility: auto;
+            contain-intrinsic-size: 720px;
+        }
     </style>
 </head>
 <body>
@@ -191,15 +197,75 @@
         };
 
         // --- Icon Component ---
+        // รวมคำสั่งสร้างไอคอนหลายตัวให้ทำงานเพียงครั้งเดียวต่อเฟรม
+        // เดิมแต่ละไอคอนสั่งสแกนทั้งหน้า ทำให้ Safari บนมือถือทำงานซ้ำมาก
+        let lucideRefreshQueued = false;
+        const scheduleLucideRefresh = () => {
+            if (lucideRefreshQueued || !window.lucide) return;
+            lucideRefreshQueued = true;
+            const run = () => {
+                lucideRefreshQueued = false;
+                try { window.lucide.createIcons(); } catch (error) { console.warn('สร้างไอคอนไม่สำเร็จ', error); }
+            };
+            if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(run);
+            else setTimeout(run, 0);
+        };
+
         const Icon = ({ name, size = 20, className = "" }) => {
             const iconRef = useRef(null);
             useEffect(() => {
                 if (window.lucide && iconRef.current) {
                     iconRef.current.innerHTML = `<i data-lucide="${name}" style="width: ${size}px; height: ${size}px;" class="${className}"></i>`;
-                    window.lucide.createIcons();
+                    scheduleLucideRefresh();
                 }
             }, [name, size, className]);
             return <span ref={iconRef} className={`inline-flex items-center justify-center ${className}`} />;
+        };
+
+        // ดึงรายการข่าวของทั้งสัปดาห์ขึ้นมาครบเหมือนเดิม
+        // แต่เลื่อนการถอดรหัสรูป Base64 จนกว่าการ์ดจะใกล้หน้าจอ เพื่อลดภาระ Safari
+        // ข้อมูลและโครงสร้างใน Firestore ยังคงเดิมทุกประการ
+        const LazyNewsImage = ({ src }) => {
+            const containerRef = useRef(null);
+            const [shouldLoad, setShouldLoad] = useState(false);
+            const [loaded, setLoaded] = useState(false);
+
+            useEffect(() => {
+                setLoaded(false);
+                if (!src) return;
+                if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+                    setShouldLoad(true);
+                    return;
+                }
+
+                const observer = new IntersectionObserver((entries) => {
+                    if (entries.some(entry => entry.isIntersecting)) {
+                        setShouldLoad(true);
+                        observer.disconnect();
+                    }
+                }, { rootMargin: '500px 0px' });
+
+                if (containerRef.current) observer.observe(containerRef.current);
+                return () => observer.disconnect();
+            }, [src]);
+
+            return (
+                <div ref={containerRef} className="absolute inset-0 flex items-center justify-center">
+                    {!loaded && <div className="absolute inset-0 bg-gray-100 animate-pulse" aria-hidden="true"></div>}
+                    {shouldLoad && (
+                        <img
+                            src={src}
+                            className={`w-full h-full object-contain transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                            alt="news"
+                            loading="lazy"
+                            decoding="async"
+                            fetchPriority="low"
+                            onLoad={() => setLoaded(true)}
+                            onError={() => setLoaded(true)}
+                        />
+                    )}
+                </div>
+            );
         };
 
         // --- Helper Functions ---
@@ -255,7 +321,7 @@
             };
         };
 
-        const MAX_PREVIOUS_WEEKS = 8; 
+        const MAX_PREVIOUS_WEEKS = 8;
 
         // --- Main App ---
         const App = () => {
@@ -288,7 +354,8 @@
                 const queryStart = new Date(currentWeekStart);
                 queryStart.setDate(currentWeekStart.getDate() - (loadedPreviousWeeks * 7));
 
-                if (loadedPreviousWeeks > 0) setOlderNewsLoading(true);
+                if (news.length === 0) setDataLoading(true);
+                else if (loadedPreviousWeeks > 0) setOlderNewsLoading(true);
 
                 const newsQuery = query(
                     collection(db, 'artifacts', appId, 'public', 'data', 'news'),
@@ -315,10 +382,11 @@
             }, [user, loadedPreviousWeeks]);
 
             const loadMoreWeeks = () => {
+                setOlderNewsLoading(true);
                 setLoadedPreviousWeeks(prev => Math.min(prev + 1, MAX_PREVIOUS_WEEKS));
             };
 
-            if (loading || dataLoading) return (
+            if (loading) return (
                 <div className="h-screen flex flex-col items-center justify-center space-y-6">
                     <div className="relative w-20 h-20 flex items-center justify-center">
                         <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
@@ -385,7 +453,14 @@
 
                     <main className="max-w-6xl mx-auto px-4 md:px-6 mt-8">
                         {view === 'dashboard' ? (
-                            <Dashboard news={news} onEdit={(item) => { setEditingItem(item); setView('admin'); }} onLoadMoreWeeks={loadMoreWeeks} canLoadMoreWeeks={loadedPreviousWeeks < MAX_PREVIOUS_WEEKS} olderNewsLoading={olderNewsLoading} />
+                            <Dashboard
+                                news={news}
+                                dataLoading={dataLoading}
+                                onEdit={(item) => { setEditingItem(item); setView('admin'); }}
+                                onLoadMoreWeeks={loadMoreWeeks}
+                                canLoadMoreWeeks={loadedPreviousWeeks < MAX_PREVIOUS_WEEKS}
+                                olderNewsLoading={olderNewsLoading}
+                            />
                         ) : view === 'standalone-editor' ? (
                             <StandaloneEditor />
                         ) : (
@@ -777,7 +852,7 @@
         };
 
         // --- Dashboard View ---
-        const Dashboard = ({ news, onEdit, onLoadMoreWeeks, canLoadMoreWeeks, olderNewsLoading }) => {
+        const Dashboard = ({ news, dataLoading, onEdit, onLoadMoreWeeks, canLoadMoreWeeks, olderNewsLoading }) => {
             const [selWeek, setSelWeek] = useState('');
             const [selDate, setSelDate] = useState('');
             const [extraWeeks, setExtraWeeks] = useState(0);
@@ -798,6 +873,23 @@
                 setSelDate(''); 
                 setExtraWeeks(0);
             }, [selWeek]);
+
+            if (dataLoading && news.length === 0) return (
+                <div className="space-y-6" aria-live="polite">
+                    <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm animate-pulse">
+                        <div className="h-5 bg-gray-200 rounded w-40 mb-4"></div>
+                        <div className="h-12 bg-gray-100 rounded-xl"></div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[0,1,2].map(i => (
+                            <div key={i} className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm animate-pulse">
+                                <div className="aspect-[4/3] bg-gray-200"></div>
+                                <div className="p-5 space-y-3"><div className="h-4 bg-gray-200 rounded w-24"></div><div className="h-4 bg-gray-100 rounded"></div><div className="h-4 bg-gray-100 rounded w-4/5"></div></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
 
             if (news.length === 0) return (
                 <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm mt-10">
@@ -1440,7 +1532,7 @@
             const displayContent = (!isLong || isExpanded) ? item.content : item.content.slice(0, maxLength) + '...';
 
             return (
-                <div className={`relative flex flex-col bg-white rounded-3xl overflow-hidden transition-all duration-300 ${used ? 'bg-green-50/50 border-2 border-green-500 shadow-sm' : 'border border-gray-100 shadow-sm hover:shadow-md'}`}>
+                <div className={`news-card-shell relative flex flex-col bg-white rounded-3xl overflow-hidden transition-all duration-300 ${used ? 'bg-green-50/50 border-2 border-green-500 shadow-sm' : 'border border-gray-100 shadow-sm hover:shadow-md'}`}>
                     
                     {used && (
                         <div className="absolute top-4 left-4 z-20 flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm border border-green-200 backdrop-blur-md">
@@ -1479,7 +1571,7 @@
 
                     {item.imageBase64 && (
                         <div className={`relative aspect-[4/3] bg-gray-100 ${used ? 'opacity-85' : ''}`}>
-                            <img src={item.imageBase64} className="w-full h-full object-contain" alt="news" />
+                            <LazyNewsImage src={item.imageBase64} />
                             
                             {!imageActionPrompt && (
                                 <div className="absolute bottom-4 inset-x-4 flex justify-center gap-3">
