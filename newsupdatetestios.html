@@ -80,7 +80,7 @@
 
 
         // บันทึกรูปให้รองรับ Safari บน iPhone/iPad รุ่นใหม่
-        // บน iOS เปิดไฟล์ PNG ต้นฉบับโดยตรง เพื่อหลีกเลี่ยงการแปลงภาพของ Share Sheet
+        // iOS ใช้ Share Sheet โดยส่งไฟล์ PNG ต้นฉบับจาก Canvas โดยตรง
         const canvasToBlob = (canvas, type = 'image/png', quality = 0.95) => {
             return new Promise((resolve, reject) => {
                 canvas.toBlob((blob) => {
@@ -96,16 +96,13 @@
             return response.blob();
         };
 
-        const openExactImageOnIOS = async ({ canvas = null, dataUrl = '', filename = 'news-image.png', previewWindow = null }) => {
-            // ใช้ PNG จาก Canvas โดยตรงแบบเดียวกับระบบเดิมที่ให้ภาพคมบนคอม
-            const exactDataUrl = canvas ? canvas.toDataURL('image/png') : dataUrl;
-            const blob = await dataUrlToBlob(exactDataUrl);
+        const openExactImageOnIOS = async ({ blob, filename = 'news-image.png' }) => {
             const objectUrl = URL.createObjectURL(blob);
+            const targetWindow = window.open('', '_blank');
 
-            const targetWindow = previewWindow && !previewWindow.closed ? previewWindow : window.open('', '_blank');
             if (!targetWindow) {
                 URL.revokeObjectURL(objectUrl);
-                alert('Safari ปิดกั้นหน้าต่างรูปภาพ กรุณาอนุญาต Pop-up แล้วลองอีกครั้ง');
+                alert('Safari ไม่สามารถเปิดรูปภาพได้ กรุณาอนุญาต Pop-up แล้วลองอีกครั้ง');
                 return false;
             }
 
@@ -123,40 +120,63 @@
         .notice { position: sticky; top: 0; z-index: 2; padding: 12px 14px; background: rgba(17,24,39,.94); font-size: 15px; line-height: 1.45; }
         .image-wrap { padding: 10px; }
         img { display: block; width: auto; height: auto; max-width: 100%; margin: 0 auto; }
-        .download { display: inline-block; margin: 4px 0 16px; padding: 11px 16px; border-radius: 12px; background: white; color: #111827; text-decoration: none; font-weight: 700; }
     </style>
 </head>
 <body>
-    <div class="notice">แตะค้างที่รูป แล้วเลือก “บันทึกไปยังแอปรูปภาพ” เพื่อเก็บไฟล์ PNG ต้นฉบับแบบคมชัด</div>
+    <div class="notice">แตะค้างที่รูป แล้วเลือก “บันทึกไปยังแอปรูปภาพ”</div>
     <div class="image-wrap"><img src="${objectUrl}" alt="รูปข่าว"></div>
-    <a class="download" href="${objectUrl}" download="${safeFilename}">บันทึกไว้ในแอปไฟล์</a>
 </body>
 </html>`);
             targetWindow.document.close();
-
-            // เก็บ URL ไว้นานพอสำหรับการแตะค้างหรือบันทึกลงแอปไฟล์
             setTimeout(() => URL.revokeObjectURL(objectUrl), 10 * 60 * 1000);
             return true;
         };
 
         const saveImageToDevice = async ({ canvas = null, dataUrl = '', filename = 'news-image.png', mimeType = 'image/png' }) => {
-            // ต้องเปิดหน้าต่างเปล่าทันทีภายในจังหวะกดปุ่ม เพื่อไม่ให้ Safari มองว่าเป็น Pop-up
-            const iosPreviewWindow = isIOSMobile() ? window.open('', '_blank') : null;
-
             try {
-                if (isIOSMobile()) {
-                    return await openExactImageOnIOS({ canvas, dataUrl, filename, previewWindow: iosPreviewWindow });
+                let blob;
+
+                if (canvas) {
+                    // บังคับใช้ PNG เพื่อรักษาความคมของกรอบและตัวหนังสือ
+                    const exactDataUrl = canvas.toDataURL('image/png');
+                    blob = await dataUrlToBlob(exactDataUrl);
+                } else {
+                    blob = await dataUrlToBlob(dataUrl);
                 }
 
-                const blob = canvas
-                    ? await canvasToBlob(canvas, mimeType)
-                    : await dataUrlToBlob(dataUrl);
+                const actualType = blob.type || mimeType || 'image/png';
+                const safeFilename = /\.[a-z0-9]+$/i.test(filename)
+                    ? filename.replace(/\.[a-z0-9]+$/i, '.png')
+                    : `${filename}.png`;
+                const file = new File([blob], safeFilename, { type: actualType });
 
-                // คอมพิวเตอร์และ Android ใช้ไฟล์ Blob ดาวน์โหลดตามเดิม
+                if (isIOSMobile()) {
+                    const canShareFile = typeof navigator.share === 'function' &&
+                        (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+
+                    if (canShareFile) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'บันทึกรูปภาพ'
+                            });
+                            return true;
+                        } catch (error) {
+                            // ผู้ใช้ปิดเมนูแชร์เอง ไม่ต้องแสดงข้อความผิดพลาด
+                            if (error && error.name === 'AbortError') return false;
+                            console.warn('Share Sheet ของ iOS ใช้งานไม่สำเร็จ กำลังใช้วิธีสำรอง', error);
+                        }
+                    }
+
+                    // วิธีสำรอง: เปิด PNG ต้นฉบับเพื่อแตะค้างบันทึก
+                    return await openExactImageOnIOS({ blob, filename: safeFilename });
+                }
+
+                // คอมพิวเตอร์และ Android ใช้วิธีดาวน์โหลดเดิม
                 const objectUrl = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = objectUrl;
-                link.download = filename;
+                link.download = safeFilename;
                 link.style.display = 'none';
                 document.body.appendChild(link);
                 link.click();
@@ -164,7 +184,6 @@
                 setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
                 return true;
             } catch (error) {
-                if (iosPreviewWindow && !iosPreviewWindow.closed) iosPreviewWindow.close();
                 console.error('บันทึกรูปภาพไม่สำเร็จ', error);
                 alert('บันทึกรูปภาพไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
                 return false;
