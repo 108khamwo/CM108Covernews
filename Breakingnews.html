@@ -194,8 +194,10 @@
                 const canvas = canvasRef.current;
                 const ctx = canvas.getContext('2d');
 
-                canvas.width = bgImage.width;
-                canvas.height = bgImage.height;
+                // ใช้ขนาดพิกเซลจริงของภาพต้นฉบับเสมอ ไม่อิงขนาดที่แสดงบนหน้าจอ
+                // เพื่อให้ไฟล์ที่บันทึกคมชัดเต็มความละเอียดทั้งมือถือและคอมพิวเตอร์
+                canvas.width = bgImage.naturalWidth || bgImage.width;
+                canvas.height = bgImage.naturalHeight || bgImage.height;
 
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(bgImage, 0, 0);
@@ -316,16 +318,79 @@
                 }
             };
 
-            const handleSave = () => {
+            const handleSave = async () => {
                 if (!canvasRef.current) return;
+
                 try {
-                    const dataUrl = canvasRef.current.toDataURL('image/jpeg', 1.0);
+                    if (!isFontLoaded) {
+                        alert("กรุณารอให้ฟอนต์โหลดเสร็จก่อนบันทึกรูปภาพครับ");
+                        return;
+                    }
+
+                    // วาดข้อมูลล่าสุดลง Canvas ทันที โดยยังอยู่ภายใต้การแตะปุ่มของผู้ใช้
+                    renderCanvas();
+                    const canvas = canvasRef.current;
+
+                    // สร้าง PNG แบบไม่สูญเสียรายละเอียดจาก Canvas ขนาดจริง
+                    // ใช้ toDataURL แบบ synchronous เพื่อคงสิทธิ์เปิด Share Sheet ของ iOS
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const base64Data = dataUrl.split(',')[1];
+                    const binaryData = atob(base64Data);
+                    const bytes = new Uint8Array(binaryData.length);
+                    for (let i = 0; i < binaryData.length; i++) {
+                        bytes[i] = binaryData.charCodeAt(i);
+                    }
+
+                    const blob = new Blob([bytes], { type: 'image/png' });
+                    const fileName = `breaking_news_${Date.now()}.png`;
+                    const imageFile = new File([blob], fileName, {
+                        type: 'image/png',
+                        lastModified: Date.now()
+                    });
+
+                    const isIOS =
+                        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+                    // iPhone/iPad: เปิดเมนูแชร์ทันที แล้วเลือก “บันทึกรูปภาพ”
+                    if (
+                        isIOS &&
+                        navigator.share &&
+                        (!navigator.canShare || navigator.canShare({ files: [imageFile] }))
+                    ) {
+                        try {
+                            await navigator.share({
+                                files: [imageFile],
+                                title: 'Breaking News'
+                            });
+                            return;
+                        } catch (shareError) {
+                            // ผู้ใช้ปิดเมนูแชร์เอง ไม่ถือว่าเป็นข้อผิดพลาด
+                            if (shareError && shareError.name === 'AbortError') return;
+                            console.warn('iOS share failed, using full-resolution fallback:', shareError);
+                        }
+                    }
+
+                    const imageUrl = URL.createObjectURL(blob);
+
+                    // iOS รุ่นหรือเบราว์เซอร์ที่แชร์ไฟล์ไม่ได้:
+                    // เปิดภาพเต็มความละเอียดในหน้าเดิม ให้กดค้างแล้วเลือกบันทึกรูปภาพ
+                    if (isIOS) {
+                        window.location.href = imageUrl;
+                        return;
+                    }
+
+                    // คอมพิวเตอร์และอุปกรณ์อื่นดาวน์โหลด PNG เต็มความละเอียดตามปกติ
                     const link = document.createElement('a');
-                    link.download = `breaking_news_${Date.now()}.jpg`;
-                    link.href = dataUrl;
+                    link.download = fileName;
+                    link.href = imageUrl;
+                    document.body.appendChild(link);
                     link.click();
+                    document.body.removeChild(link);
+                    setTimeout(() => URL.revokeObjectURL(imageUrl), 1000);
                 } catch (e) {
-                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาอัปโหลดรูปภาพต้นฉบับจากเครื่องของคุณแทนครับ");
+                    console.error(e);
+                    alert("เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาลองสร้างภาพใหม่อีกครั้งครับ");
                 }
             };
 
