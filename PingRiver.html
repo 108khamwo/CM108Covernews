@@ -451,6 +451,15 @@
 
   const num = (v, fallback = 0) => Number.isFinite(parseFloat(v)) ? parseFloat(v) : fallback;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const IOS_CANVAS_TEXT_FIX = isIOSDevice();
+
+  function alignedCanvasTextX(context, value, x, align = 'left') {
+    if (!IOS_CANVAS_TEXT_FIX) return x;
+    const width = context.measureText(String(value)).width;
+    if (align === 'center') return x - width / 2;
+    if (align === 'right' || align === 'end') return x - width;
+    return x;
+  }
 
   function roundedRect(x, y, w, h, r) {
     const rr = Math.min(r, w / 2, h / 2);
@@ -473,9 +482,12 @@
   }
   function text(t, x, y, size, weight = 400, color = C.text, align = 'left', baseline = 'alphabetic') {
     ctx.save();
+    const value = String(t);
     ctx.font = `${weight} ${size}px "Prompt", sans-serif`;
-    ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = baseline;
-    ctx.fillText(String(t), x, y);
+    ctx.fillStyle = color;
+    ctx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(value, alignedCanvasTextX(ctx, value, x, align), y);
     ctx.restore();
   }
   function fitText(t, x, y, maxW, maxSize, minSize, weight, color, align='left') {
@@ -753,13 +765,13 @@
     try {
       const state = {};
       rememberedFieldIds.forEach(id => { state[id] = el[id].value; });
-      localStorage.setItem('pingWaterRememberedFormV27', JSON.stringify(state));
+      localStorage.setItem('pingWaterRememberedFormV28', JSON.stringify(state));
     } catch (_) {}
   }
 
   function loadRememberedForm() {
     try {
-      const state = JSON.parse(localStorage.getItem('pingWaterRememberedFormV27') || 'null');
+      const state = JSON.parse(localStorage.getItem('pingWaterRememberedFormV28') || 'null');
       if (!state || typeof state !== 'object') return;
       rememberedFieldIds.forEach(id => {
         if (state[id] !== undefined && state[id] !== null && state[id] !== '') el[id].value = state[id];
@@ -769,7 +781,7 @@
 
   function cacheSuccessfulHistory(data) {
     try {
-      const oldCache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV27') || 'null');
+      const oldCache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
       const oldPoints = Array.isArray(oldCache?.points) ? oldCache.points.filter(validLevelPoint) : [];
       let incoming = Array.isArray(data.levels) ? data.levels.filter(validLevelPoint) : [];
       if (Number.isFinite(Number(data.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') && /^\d{2}:\d{2}$/.test(data.time || '')) {
@@ -785,7 +797,7 @@
         .sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))
         .slice(-72);
 
-      localStorage.setItem('pingWaterHistoryCacheV27', JSON.stringify({
+      localStorage.setItem('pingWaterHistoryCacheV28', JSON.stringify({
         saved_at: new Date().toISOString(),
         source: data.source || data.source_key || oldCache?.source || '',
         data_date: data.date || oldCache?.data_date || '',
@@ -812,10 +824,10 @@
 
   function restoreRememberedHistoryOnly() {
     try {
-      let cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV27') || 'null');
+      let cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
       // รองรับข้อมูลที่เคยดึงจากระบบเวอร์ชันก่อนหน้า
       if (!Array.isArray(cache?.points)) {
-        const legacy = JSON.parse(localStorage.getItem('pingWaterLastPayloadV27') || 'null');
+        const legacy = JSON.parse(localStorage.getItem('pingWaterLastPayloadV28') || 'null');
         if (legacy && typeof legacy === 'object') {
           let legacyPoints = Array.isArray(legacy.levels) ? legacy.levels.filter(validLevelPoint) : [];
           if (Number.isFinite(Number(legacy.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(legacy.date || '') && /^\d{2}:\d{2}$/.test(legacy.time || '')) {
@@ -895,7 +907,7 @@
 
   function getManualCompletion(key) {
     try {
-      const value = JSON.parse(localStorage.getItem('pingWaterManualCompletionV27') || 'null');
+      const value = JSON.parse(localStorage.getItem('pingWaterManualCompletionV28') || 'null');
       return value && value.key === key ? value : null;
     } catch (_) { return null; }
   }
@@ -938,7 +950,7 @@
       if (key && Number.isFinite(value)) map.set(key, value);
     });
     try {
-      const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV27') || 'null');
+      const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
       const points = Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
       points.forEach(p => map.set(`${p.date}T${p.time}`, Number(p.level)));
     } catch (_) {}
@@ -987,7 +999,7 @@
 
     const snapshot = {};
     rememberedFieldIds.forEach(id => snapshot[id] = el[id].value);
-    localStorage.setItem('pingWaterManualCompletionV27', JSON.stringify({ key: ctx.key, snapshot, savedAt: new Date().toISOString() }));
+    localStorage.setItem('pingWaterManualCompletionV28', JSON.stringify({ key: ctx.key, snapshot, savedAt: new Date().toISOString() }));
     saveRememberedForm();
     hideManualPrompt();
     await updatePreview();
@@ -1016,7 +1028,7 @@
 
     const allCached = (() => {
       try {
-        const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV27') || 'null');
+        const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
         return Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
       } catch (_) { return []; }
     })();
@@ -1092,7 +1104,7 @@
         }
       }
 
-      localStorage.setItem('pingWaterLastPayloadV27', JSON.stringify(data));
+      localStorage.setItem('pingWaterLastPayloadV28', JSON.stringify(data));
       return true;
     } catch (error) {
       const message = error.name === 'AbortError' ? 'หมดเวลารอการตอบกลับ กรุณาลองใหม่' : error.message;
@@ -1264,9 +1276,12 @@
     ctx.restore();
     ctx.save();
     ctx.font = `700 60px "Prompt", sans-serif`;
-    ctx.textAlign='center'; ctx.lineWidth=4; ctx.strokeStyle='rgba(3,13,40,.68)';
-    ctx.strokeText('เมตร',847,612);
-    ctx.fillStyle='#ffffff'; ctx.fillText('เมตร',847,612);
+    const meterText = 'เมตร';
+    const meterX = alignedCanvasTextX(ctx, meterText, 847, 'center');
+    ctx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : 'center';
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(3,13,40,.68)';
+    ctx.strokeText(meterText,meterX,612);
+    ctx.fillStyle='#ffffff'; ctx.fillText(meterText,meterX,612);
     ctx.restore();
 
     const changeColor = change > 0 ? C.red : change < 0 ? C.green : C.orange;
@@ -1345,7 +1360,7 @@
     const dateY = outH * COMPOSITE_POS.dateY;
     const baseDateSize = Math.max(26, Math.round(outW * 0.035)) + 7;
     targetCtx.save();
-    targetCtx.textAlign = 'center';
+    targetCtx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : 'center';
     targetCtx.textBaseline = 'middle';
 
     let dateSize = baseDateSize;
@@ -1367,9 +1382,10 @@
     targetCtx.shadowOffsetY = Math.max(3, Math.round(dateSize * 0.10));
     targetCtx.lineWidth = Math.max(1.5, dateSize * 0.045);
     targetCtx.strokeStyle = 'rgba(0,0,0,.48)';
-    targetCtx.strokeText(dateText, adjustedDateX, dateY);
+    const renderedDateX = alignedCanvasTextX(targetCtx, dateText, adjustedDateX, 'center');
+    targetCtx.strokeText(dateText, renderedDateX, dateY);
     targetCtx.fillStyle = '#ffffff';
-    targetCtx.fillText(dateText, adjustedDateX, dateY);
+    targetCtx.fillText(dateText, renderedDateX, dateY);
     targetCtx.restore();
   }
 
