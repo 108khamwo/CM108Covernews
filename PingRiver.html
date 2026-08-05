@@ -191,6 +191,8 @@
       box-shadow: 0 8px 20px rgba(90,19,191,.18);
     }
     .copy-status { font-size: 12px; color: #5f7693; margin-top: 8px; }
+    .always-visible-report { margin-top: 14px; }
+    .always-visible-report .section-title { margin-top: 0; }
     @media (max-width: 1050px) {
       .app { grid-template-columns: 1fr; }
       .controls { position: static; max-height: none; }
@@ -365,14 +367,17 @@
             <button class="secondary" id="resetBtn" type="button">คืนค่าตัวอย่าง</button>
           </div>
 
-          <div class="section-title">ข้อความรายงาน</div>
-          <div class="report-box">
-            <textarea id="reportText" class="report-text" readonly></textarea>
-            <div class="report-actions"><button class="copy-button" id="copyReportBtn" type="button">คัดลอกข้อความรายงาน</button></div>
-            <div class="copy-status" id="copyStatus">ระบบจะสรุปข้อความให้อัตโนมัติ</div>
-          </div>
         </div>
       </details>
+
+      <div class="always-visible-report">
+        <div class="section-title">ข้อความรายงาน</div>
+        <div class="report-box">
+          <textarea id="reportText" class="report-text" readonly></textarea>
+          <div class="report-actions"><button class="copy-button" id="copyReportBtn" type="button">คัดลอกข้อความรายงาน</button></div>
+          <div class="copy-status" id="copyStatus">ระบบจะสรุปข้อความให้อัตโนมัติ</div>
+        </div>
+      </div>
     </section>
 
     <section class="preview-wrap">
@@ -381,7 +386,6 @@
         <span>ข้อมูลระดับน้ำ + วันที่ บนรูปต้นฉบับ</span>
       </div>
       <div class="canvas-shell"><canvas id="dashboard" width="1200" height="1500"></canvas></div>
-      <div class="hint">กรณีข้อมูลต้นทางยังไม่ถึงชั่วโมงปัจจุบัน ระบบจะแสดงช่องกรอกเองเพียงครั้งเดียว โดยไม่เลื่อนข้อมูลซ้ำเมื่อกดปุ่มหลายครั้ง</div>
     </section>
   </main>
 
@@ -765,13 +769,13 @@
     try {
       const state = {};
       rememberedFieldIds.forEach(id => { state[id] = el[id].value; });
-      localStorage.setItem('pingWaterRememberedFormV28', JSON.stringify(state));
+      localStorage.setItem('pingWaterRememberedFormV30', JSON.stringify(state));
     } catch (_) {}
   }
 
   function loadRememberedForm() {
     try {
-      const state = JSON.parse(localStorage.getItem('pingWaterRememberedFormV28') || 'null');
+      const state = JSON.parse(localStorage.getItem('pingWaterRememberedFormV30') || 'null');
       if (!state || typeof state !== 'object') return;
       rememberedFieldIds.forEach(id => {
         if (state[id] !== undefined && state[id] !== null && state[id] !== '') el[id].value = state[id];
@@ -781,7 +785,7 @@
 
   function cacheSuccessfulHistory(data) {
     try {
-      const oldCache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
+      const oldCache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV30') || 'null');
       const oldPoints = Array.isArray(oldCache?.points) ? oldCache.points.filter(validLevelPoint) : [];
       let incoming = Array.isArray(data.levels) ? data.levels.filter(validLevelPoint) : [];
       if (Number.isFinite(Number(data.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') && /^\d{2}:\d{2}$/.test(data.time || '')) {
@@ -797,7 +801,7 @@
         .sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))
         .slice(-72);
 
-      localStorage.setItem('pingWaterHistoryCacheV28', JSON.stringify({
+      localStorage.setItem('pingWaterHistoryCacheV30', JSON.stringify({
         saved_at: new Date().toISOString(),
         source: data.source || data.source_key || oldCache?.source || '',
         data_date: data.date || oldCache?.data_date || '',
@@ -824,10 +828,10 @@
 
   function restoreRememberedHistoryOnly() {
     try {
-      let cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
+      let cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV30') || 'null');
       // รองรับข้อมูลที่เคยดึงจากระบบเวอร์ชันก่อนหน้า
       if (!Array.isArray(cache?.points)) {
-        const legacy = JSON.parse(localStorage.getItem('pingWaterLastPayloadV28') || 'null');
+        const legacy = JSON.parse(localStorage.getItem('pingWaterLastPayloadV30') || 'null');
         if (legacy && typeof legacy === 'object') {
           let legacyPoints = Array.isArray(legacy.levels) ? legacy.levels.filter(validLevelPoint) : [];
           if (Number.isFinite(Number(legacy.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(legacy.date || '') && /^\d{2}:\d{2}$/.test(legacy.time || '')) {
@@ -907,7 +911,7 @@
 
   function getManualCompletion(key) {
     try {
-      const value = JSON.parse(localStorage.getItem('pingWaterManualCompletionV28') || 'null');
+      const value = JSON.parse(localStorage.getItem('pingWaterManualCompletionV30') || 'null');
       return value && value.key === key ? value : null;
     } catch (_) { return null; }
   }
@@ -950,7 +954,7 @@
       if (key && Number.isFinite(value)) map.set(key, value);
     });
     try {
-      const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
+      const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV30') || 'null');
       const points = Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
       points.forEach(p => map.set(`${p.date}T${p.time}`, Number(p.level)));
     } catch (_) {}
@@ -999,7 +1003,7 @@
 
     const snapshot = {};
     rememberedFieldIds.forEach(id => snapshot[id] = el[id].value);
-    localStorage.setItem('pingWaterManualCompletionV28', JSON.stringify({ key: ctx.key, snapshot, savedAt: new Date().toISOString() }));
+    localStorage.setItem('pingWaterManualCompletionV30', JSON.stringify({ key: ctx.key, snapshot, savedAt: new Date().toISOString() }));
     saveRememberedForm();
     hideManualPrompt();
     await updatePreview();
@@ -1028,7 +1032,7 @@
 
     const allCached = (() => {
       try {
-        const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV28') || 'null');
+        const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV30') || 'null');
         return Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
       } catch (_) { return []; }
     })();
@@ -1104,7 +1108,7 @@
         }
       }
 
-      localStorage.setItem('pingWaterLastPayloadV28', JSON.stringify(data));
+      localStorage.setItem('pingWaterLastPayloadV30', JSON.stringify(data));
       return true;
     } catch (error) {
       const message = error.name === 'AbortError' ? 'หมดเวลารอการตอบกลับ กรุณาลองใหม่' : error.message;
