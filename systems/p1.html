@@ -1,0 +1,1495 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>แดชบอร์ดแจ้งเตือนระดับน้ำปิง P.1 — Auto v4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0a2f72;
+      --blue: #0b61d8;
+      --blue-2: #0a88f3;
+      --light: #eef7ff;
+      --border: #c9ddf5;
+      --text: #102b55;
+      --muted: #58708f;
+      --panel: #ffffff;
+      --shadow: 0 18px 50px rgba(9, 62, 128, .16);
+    }
+    * { box-sizing: border-box; }
+    html, body, button, input, select, textarea, summary, details {
+      font-family: "Prompt", sans-serif !important;
+    }
+    body {
+      margin: 0;
+      font-family: "Prompt", sans-serif;
+      color: var(--text);
+      background: linear-gradient(135deg, #eaf5ff 0%, #f8fbff 50%, #eaf4ff 100%);
+      min-height: 100vh;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: minmax(310px, 390px) minmax(580px, 1fr);
+      gap: 22px;
+      padding: 22px;
+      max-width: 1700px;
+      margin: 0 auto;
+    }
+    .controls {
+      background: rgba(255,255,255,.96);
+      border: 1px solid #d6e6f7;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+      align-self: start;
+      position: sticky;
+      top: 18px;
+      max-height: calc(100vh - 36px);
+      overflow: auto;
+    }
+    h1 { font-size: 25px; margin: 0 0 5px; color: var(--navy); }
+    .lead { margin: 0 0 20px; color: var(--muted); line-height: 1.55; font-size: 14px; }
+    .section-title {
+      font-weight: 700;
+      margin: 18px 0 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e3edf8;
+      color: var(--navy);
+    }
+    .field { margin-bottom: 11px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #294f7d; }
+    input, select {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cbdced;
+      border-radius: 11px;
+      background: #fff;
+      color: #183b66;
+      font: inherit;
+      outline: none;
+      transition: .15s ease;
+    }
+    input:focus, select:focus { border-color: #4e98e8; box-shadow: 0 0 0 3px rgba(65,145,230,.12); }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .thai-date-grid { display: grid; grid-template-columns: .72fr 1.35fr 1fr; gap: 8px; align-items: end; }
+    .date-part span { display: block; margin: 0 0 5px; font-size: 11px; font-weight: 600; color: #5b7593; }
+    .date-part select, .date-part input { padding-left: 9px; padding-right: 9px; }
+    .checkline { display: flex; align-items: center; gap: 9px; margin: 12px 0; font-size: 14px; }
+    .checkline input { width: 19px; height: 19px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 13px;
+      padding: 12px 14px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, filter .12s ease;
+    }
+    button:hover { filter: brightness(1.03); }
+    button:active { transform: translateY(1px); }
+    .primary { color: #fff; background: linear-gradient(135deg, #0b65df, #0849b8); box-shadow: 0 9px 22px rgba(5,86,196,.24); }
+    .secondary { color: #174c87; background: #e8f3ff; }
+    .preview-wrap {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,.92);
+      border: 1px solid #d6e6f7;
+      border-radius: 17px;
+      padding: 12px 15px;
+      box-shadow: 0 9px 30px rgba(9,62,128,.09);
+      color: #355b88;
+      font-size: 14px;
+    }
+    .canvas-shell {
+      width: 100%;
+      padding: 18px;
+      border-radius: 25px;
+      background:
+        linear-gradient(45deg, #e7eef7 25%, transparent 25%),
+        linear-gradient(-45deg, #e7eef7 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e7eef7 75%),
+        linear-gradient(-45deg, transparent 75%, #e7eef7 75%);
+      background-size: 28px 28px;
+      background-position: 0 0, 0 14px, 14px -14px, -14px 0px;
+      box-shadow: var(--shadow);
+      overflow: visible;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+    }
+    .hint { color: #607895; font-size: 13px; line-height: 1.5; }
+
+    .auto-box {
+      border: 1px solid #bcd8f4;
+      background: linear-gradient(145deg, #f7fbff, #edf7ff);
+      border-radius: 17px;
+      padding: 14px;
+      margin-bottom: 4px;
+    }
+    .auto-actions { display: grid; grid-template-columns: 1fr; gap: 9px; margin-top: 8px; }
+    .fetch-button {
+      width: 100%; color: #fff;
+      background: linear-gradient(135deg, #06964e, #04753e);
+      box-shadow: 0 8px 20px rgba(4,117,62,.20);
+    }
+    .fetch-button[disabled] { cursor: wait; filter: grayscale(.25); opacity: .72; }
+    .manual-button {
+      width: 100%; color: #fff;
+      background: linear-gradient(135deg, #0b65df, #0849b8);
+      box-shadow: 0 8px 20px rgba(5,86,196,.20);
+    }
+    .manual-button[disabled] { cursor: wait; filter: grayscale(.25); opacity: .72; }
+    .fetch-status {
+      display: flex; align-items: flex-start; gap: 9px;
+      margin-top: 10px; padding: 10px 11px;
+      border-radius: 11px; background: #fff;
+      border: 1px solid #d8e6f4; font-size: 12px; line-height: 1.45;
+      color: #4f6987;
+    }
+    .fetch-status .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 3px; flex: 0 0 auto; background: #8aa0b8; }
+    .fetch-status.loading .dot { background: #ee8a00; box-shadow: 0 0 0 4px rgba(238,138,0,.12); }
+    .fetch-status.success .dot { background: #06964e; box-shadow: 0 0 0 4px rgba(6,150,78,.12); }
+    .fetch-status.error .dot { background: #df2734; box-shadow: 0 0 0 4px rgba(223,39,52,.12); }
+    .fetch-status.warning .dot { background: #ee8a00; box-shadow: 0 0 0 4px rgba(238,138,0,.12); }
+    .fetch-status strong { display: block; color: #173f70; margin-bottom: 2px; }
+    .mini-note { font-size: 11.5px; color: #6d8199; line-height: 1.45; margin-top: 8px; }
+    .report-box {
+      border: 1px solid #bcd8f4;
+      background: linear-gradient(145deg, #f7fbff, #edf7ff);
+      border-radius: 17px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .report-text {
+      width: 100%;
+      min-height: 215px;
+      resize: vertical;
+      padding: 12px 13px;
+      border: 1px solid #cbdced;
+      border-radius: 12px;
+      background: #ffffff;
+      color: #183b66;
+      font: inherit;
+      line-height: 1.55;
+    }
+    .report-actions { display: grid; grid-template-columns: 1fr; gap: 9px; margin-top: 10px; }
+    .copy-button {
+      width: 100%; color: #fff;
+      background: linear-gradient(135deg, #8b2cff, #5a13bf);
+      box-shadow: 0 8px 20px rgba(90,19,191,.18);
+    }
+    .copy-status { font-size: 12px; color: #5f7693; margin-top: 8px; }
+    .always-visible-report { margin-top: 14px; }
+    .always-visible-report .section-title { margin-top: 0; }
+    @media (max-width: 1050px) {
+      .app { grid-template-columns: 1fr; }
+      .controls { position: static; max-height: none; }
+    }
+
+    /* v9 — simplified mobile/desktop workflow */
+    .app {
+      display: block;
+      max-width: 980px;
+      padding: 14px;
+    }
+    .controls {
+      position: static;
+      max-height: none;
+      overflow: visible;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .simple-title { font-size: 24px; margin: 0; color: var(--navy); }
+    .simple-lead { margin: 6px 0 14px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .quick-actions button { min-height: 52px; font-size: 16px; }
+    .save-button {
+      color: #fff;
+      background: linear-gradient(135deg, #0b65df, #0849b8);
+      box-shadow: 0 9px 22px rgba(5,86,196,.24);
+    }
+    .save-button[disabled], .fetch-button[disabled] { cursor: wait; opacity: .65; }
+    .fetch-status { margin: 12px 0 0; }
+    .manual-prompt {
+      margin-top: 12px;
+      border: 1px solid #f1c36b;
+      background: #fff9e9;
+      border-radius: 15px;
+      padding: 13px;
+    }
+    .manual-prompt[hidden], .manual-form[hidden] { display: none !important; }
+    .manual-prompt strong { color: #8a5700; display: block; margin-bottom: 4px; }
+    .manual-prompt p { margin: 0 0 10px; color: #755d2d; font-size: 13px; line-height: 1.5; }
+    .manual-open-button, .manual-submit-button {
+      width: 100%;
+      color: #fff;
+      background: linear-gradient(135deg, #e78b00, #bd6700);
+    }
+    .manual-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 10px; }
+    .manual-form .field { margin: 0; }
+    .manual-submit-button { min-width: 145px; height: 45px; }
+    details.advanced-settings {
+      margin-top: 12px;
+      border: 1px solid #d6e6f7;
+      border-radius: 15px;
+      background: #f8fbff;
+      overflow: hidden;
+    }
+    details.advanced-settings > summary {
+      cursor: pointer;
+      padding: 13px 15px;
+      font-weight: 700;
+      color: #315d8d;
+      user-select: none;
+      list-style: none;
+    }
+    details.advanced-settings > summary::-webkit-details-marker { display: none; }
+    details.advanced-settings > summary::after { content: '▾'; float: right; }
+    details.advanced-settings[open] > summary::after { content: '▴'; }
+    .advanced-inner { padding: 0 15px 16px; }
+    .preview-wrap { gap: 8px; }
+    .preview-toolbar { padding: 10px 13px; }
+    .canvas-shell { padding: 10px; border-radius: 18px; }
+    .hint { padding: 0 2px 8px; }
+    @media (max-width: 640px) {
+      .app { padding: 8px; }
+      .controls { padding: 14px; border-radius: 18px; }
+      .simple-title { font-size: 21px; }
+      .quick-actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .quick-actions button { font-size: 14px; padding: 11px 8px; }
+      .manual-form { grid-template-columns: 1fr; }
+      .manual-submit-button { width: 100%; }
+      .grid2 { grid-template-columns: 1fr; }
+      .preview-toolbar { align-items: flex-start; flex-direction: column; }
+    }
+
+  </style>
+
+<style id="combined-shell-style">
+#fetchBtn{display:none!important}
+.quick-actions{grid-template-columns:1fr!important}
+body{overflow-x:hidden!important}
+</style>
+</head>
+<body>
+  <main class="app">
+    <section class="controls">
+      <h1 class="simple-title">รายงานระดับน้ำปิง P.1</h1>
+      <p class="simple-lead">กดดึงข้อมูล แล้วกดบันทึกรูปได้เลย บน iPhone และ iPad ปุ่มบันทึกจะเปลี่ยนเป็นปุ่มแชร์</p>
+
+      <div class="quick-actions">
+        <button class="fetch-button" id="fetchBtn" type="button">ดึงข้อมูล</button>
+        <button class="save-button" id="saveBtn" type="button">บันทึกรูป</button>
+      </div>
+
+      <div class="fetch-status" id="fetchStatus" role="status" aria-live="polite">
+        <span class="dot"></span>
+        <div><strong>พร้อมใช้งาน</strong><span>กดดึงข้อมูลเพื่ออัปเดตค่าระดับน้ำล่าสุด</span></div>
+      </div>
+
+      <div class="manual-prompt" id="manualPromptBox" hidden>
+        <strong>ข้อมูลต้นทางยังไม่ถึงเวลาปัจจุบัน</strong>
+        <p id="manualPromptText">ระบบพบว่าข้อมูลยังล่าช้า คุณสามารถกรอกค่าปัจจุบันได้หนึ่งครั้ง</p>
+        <button class="manual-open-button" id="manualOpenBtn" type="button">กรอกข้อมูลเวลาปัจจุบัน</button>
+        <div class="manual-form" id="manualFormArea" hidden>
+          <div class="field">
+            <label for="manualLatestValue" id="manualTargetLabel">ระดับน้ำปัจจุบัน (เมตร)</label>
+            <input id="manualLatestValue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 1.65">
+          </div>
+          <button class="manual-submit-button" id="manualSubmitBtn" type="button">ยืนยันครั้งเดียว</button>
+        </div>
+      </div>
+
+      <details class="advanced-settings" id="advancedSettings">
+        <summary>เปิดแก้ไขข้อมูลและตั้งค่า</summary>
+        <div class="advanced-inner">
+          <div class="section-title">ข้อมูลปัจจุบัน</div>
+          <div class="field">
+            <label for="station">ชื่อจุดตรวจวัด</label>
+            <input id="station" value="ระดับน้ำปิง จุด P.1" />
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="latest">ระดับน้ำล่าสุด (เมตร)</label><input id="latest" type="number" min="0" step="0.01" value="2.80" /></div>
+            <div class="field"><label for="change">เปลี่ยนแปลง (ซม.)</label><input id="change" type="number" step="1" value="1" /></div>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label>วันที่ (พ.ศ.)</label>
+              <div class="thai-date-grid">
+                <div class="date-part"><span>วัน</span><select id="dateDay" aria-label="วัน"></select></div>
+                <div class="date-part"><span>เดือน</span><select id="dateMonth" aria-label="เดือน"></select></div>
+                <div class="date-part"><span>ปี พ.ศ.</span><input id="dateYear" type="number" min="2400" max="2700" step="1" inputmode="numeric" value="2569" aria-label="ปี พ.ศ." /></div>
+              </div>
+              <input id="date" type="hidden" value="2026-08-01" />
+            </div>
+            <div class="field"><label for="time">เวลาล่าสุด</label><input id="time" type="time" value="10:00" /></div>
+          </div>
+
+          <div class="section-title">ข้อมูลย้อนหลัง 1–5 ชั่วโมง</div>
+          <div class="grid2">
+            <div class="field"><label for="h5">5 ชั่วโมงที่แล้ว</label><input id="h5" type="number" step="0.01" value="2.52" /></div>
+            <div class="field"><label for="h4">4 ชั่วโมงที่แล้ว</label><input id="h4" type="number" step="0.01" value="2.57" /></div>
+            <div class="field"><label for="h3">3 ชั่วโมงที่แล้ว</label><input id="h3" type="number" step="0.01" value="2.62" /></div>
+            <div class="field"><label for="h2">2 ชั่วโมงที่แล้ว</label><input id="h2" type="number" step="0.01" value="2.74" /></div>
+            <div class="field"><label for="h1">1 ชั่วโมงที่แล้ว</label><input id="h1" type="number" step="0.01" value="2.79" /></div>
+          </div>
+
+          <div class="section-title">เกณฑ์แจ้งเตือน</div>
+          <div class="grid2">
+            <div class="field"><label for="normalMax">ปกติ ต่ำกว่า</label><input id="normalMax" type="number" step="0.01" value="3.00" /></div>
+            <div class="field"><label for="readyMax">เตรียมพร้อม ถึง</label><input id="readyMax" type="number" step="0.01" value="3.70" /></div>
+            <div class="field"><label for="criticalMin">วิกฤต สูงกว่า</label><input id="criticalMin" type="number" step="0.01" value="3.70" /></div>
+            <div class="field"><label for="barrier">เสริมแนวคันกั้น</label><input id="barrier" type="number" step="0.01" value="4.20" /></div>
+          </div>
+
+          <div class="section-title">การส่งออก</div>
+          <div class="field">
+            <label for="size">ขนาดไฟล์ PNG</label>
+            <select id="size">
+              <option value="1080">1080 px</option>
+              <option value="1200" selected>1200 px</option>
+              <option value="1600">1600 px</option>
+              <option value="2000">2000 px</option>
+            </select>
+          </div>
+          <label class="checkline"><input id="transparent" type="checkbox" checked /> ใช้ส่วนรายการแบบโปร่งใส</label>
+          <div class="actions">
+            <button class="secondary" id="resetBtn" type="button">คืนค่าตัวอย่าง</button>
+          </div>
+
+        </div>
+      </details>
+
+      <div class="always-visible-report">
+        <div class="section-title">ข้อความรายงาน</div>
+        <div class="report-box">
+          <textarea id="reportText" class="report-text" readonly></textarea>
+          <div class="report-actions"><button class="copy-button" id="copyReportBtn" type="button">คัดลอกข้อความรายงาน</button></div>
+          <div class="copy-status" id="copyStatus">ระบบจะสรุปข้อความให้อัตโนมัติ</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="preview-wrap">
+      <div class="preview-toolbar">
+        <strong>ตัวอย่างภาพที่จะบันทึก</strong>
+        <span>ข้อมูลระดับน้ำ + วันที่ บนรูปต้นฉบับ</span>
+      </div>
+      <div class="canvas-shell"><canvas id="dashboard" width="1200" height="1500"></canvas></div>
+    </section>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+  const canvas = document.getElementById('dashboard');
+  const ctx = canvas.getContext('2d');
+  const ids = ['station','latest','change','date','time','h5','h4','h3','h2','h1','normalMax','readyMax','criticalMin','barrier','size','transparent'];
+  const el = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  const dateUi = {
+    day: document.getElementById('dateDay'),
+    month: document.getElementById('dateMonth'),
+    year: document.getElementById('dateYear')
+  };
+  const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const FIXED_API_URL = 'https://ping-water.108khamwo.workers.dev';
+  const FIXED_STATION = 'P.1';
+  const autoEl = {
+    fetchBtn: document.getElementById('fetchBtn'),
+    saveBtn: document.getElementById('saveBtn'),
+    fetchStatus: document.getElementById('fetchStatus'),
+    reportText: document.getElementById('reportText'),
+    copyReportBtn: document.getElementById('copyReportBtn'),
+    copyStatus: document.getElementById('copyStatus'),
+    manualPromptBox: document.getElementById('manualPromptBox'),
+    manualPromptText: document.getElementById('manualPromptText'),
+    manualOpenBtn: document.getElementById('manualOpenBtn'),
+    manualFormArea: document.getElementById('manualFormArea'),
+    manualLatestValue: document.getElementById('manualLatestValue'),
+    manualTargetLabel: document.getElementById('manualTargetLabel'),
+    manualSubmitBtn: document.getElementById('manualSubmitBtn')
+  };
+  let pendingManualContext = null;
+  let hasRequestedLatestDataThisSession = false;
+  const rememberedFieldIds = ['latest','change','date','time','h5','h4','h3','h2','h1'];
+
+  const defaults = {
+    station: 'ระดับน้ำปิง จุด P.1', latest: '2.80', change: '1', date: '2026-08-01', time: '10:00',
+    h5: '2.52', h4: '2.57', h3: '2.62', h2: '2.74', h1: '2.79', normalMax: '3.00', readyMax: '3.70',
+    criticalMin: '3.70', barrier: '4.20', size: '1200', transparent: true
+  };
+
+  const EMBEDDED_BACKGROUND_IMAGE = '../assets/background-p1.jpg';
+  let backgroundImagePromise = null;
+  const COMPOSITE_POS = { overlayScale: 0.942, overlayX: 0.029, overlayY: 0.226, dateX: 0.734, dateY: 0.092 };
+
+  let promptFontReadyPromise = null;
+  function ensurePromptFontReady() {
+    if (!promptFontReadyPromise) {
+      promptFontReadyPromise = (async () => {
+        if (!document.fonts) return;
+        const sample = 'วันที่ ระดับน้ำปิง 0123456789';
+        const weights = [400, 500, 600, 700, 800];
+        await Promise.all(weights.map(weight => document.fonts.load(`${weight} 48px "Prompt"`, sample)));
+        await document.fonts.ready;
+      })().catch(() => {});
+    }
+    return promptFontReadyPromise;
+  }
+
+  const C = {
+    navy: '#082b6b', blue: '#075bd2', blue2: '#0a87ef', cyan: '#eaf6ff',
+    text: '#102b55', muted: '#607792', line: '#c7d9ee', white: '#ffffff',
+    green: '#00ff06', greenLight: '#eaffea', orange: '#ffba00', orangeLight: '#fff8dc',
+    red: '#ff3600', redLight: '#fff0eb', purple: '#ff3600', purpleLight: '#fff0eb'
+  };
+
+  const num = (v, fallback = 0) => Number.isFinite(parseFloat(v)) ? parseFloat(v) : fallback;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const IOS_CANVAS_TEXT_FIX = isIOSDevice();
+
+  function alignedCanvasTextX(context, value, x, align = 'left') {
+    if (!IOS_CANVAS_TEXT_FIX) return x;
+    const width = context.measureText(String(value)).width;
+    if (align === 'center') return x - width / 2;
+    if (align === 'right' || align === 'end') return x - width;
+    return x;
+  }
+
+  function roundedRect(x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+  function panel(x, y, w, h, r = 24, fill = C.white, stroke = C.line, shadow = true) {
+    ctx.save();
+    if (shadow) { ctx.shadowColor = 'rgba(5,58,125,.13)'; ctx.shadowBlur = 23; ctx.shadowOffsetY = 8; }
+    roundedRect(x, y, w, h, r);
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke();
+    ctx.restore();
+  }
+  function text(t, x, y, size, weight = 400, color = C.text, align = 'left', baseline = 'alphabetic') {
+    ctx.save();
+    const value = String(t);
+    ctx.font = `${weight} ${size}px "Prompt", sans-serif`;
+    ctx.fillStyle = color;
+    ctx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(value, alignedCanvasTextX(ctx, value, x, align), y);
+    ctx.restore();
+  }
+  function fitText(t, x, y, maxW, maxSize, minSize, weight, color, align='left') {
+    let s = maxSize;
+    ctx.save();
+    while (s > minSize) {
+      ctx.font = `${weight} ${s}px "Prompt", sans-serif`;
+      if (ctx.measureText(t).width <= maxW) break;
+      s -= 1;
+    }
+    ctx.restore();
+    text(t, x, y, s, weight, color, align);
+  }
+  function line(x1, y1, x2, y2, color, width = 2, dash = []) {
+    ctx.save(); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash); ctx.stroke(); ctx.restore();
+  }
+  function circle(x, y, r, fill, stroke = null, width = 0) {
+    ctx.save(); ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=fill; ctx.fill();
+    if (stroke) { ctx.strokeStyle=stroke; ctx.lineWidth=width; ctx.stroke(); } ctx.restore();
+  }
+  function formatThaiDate(v) {
+    const d = new Date(v + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return v;
+    const buddhistYear = d.getFullYear() + 543;
+    const shortYear = String(buddhistYear % 100).padStart(2, '0');
+    return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${shortYear}`;
+  }
+
+  function initializeThaiDateControls() {
+    if (!dateUi.day || !dateUi.month || !dateUi.year) return;
+    dateUi.day.innerHTML = Array.from({ length: 31 }, (_, index) => `<option value="${index + 1}">${index + 1}</option>`).join('');
+    dateUi.month.innerHTML = THAI_MONTHS.map((month, index) => `<option value="${index + 1}">${month}</option>`).join('');
+    syncManualDateFieldsFromIso();
+  }
+
+  function syncManualDateFieldsFromIso() {
+    if (!dateUi.day || !dateUi.month || !dateUi.year) return;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(el.date.value || '');
+    if (!match) return;
+    const gregorianYear = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    dateUi.day.value = String(day);
+    dateUi.month.value = String(month);
+    dateUi.year.value = String(gregorianYear + 543);
+  }
+
+  function syncIsoDateFromManualFields() {
+    const buddhistYear = Number(dateUi.year.value);
+    const month = Number(dateUi.month.value);
+    const requestedDay = Number(dateUi.day.value);
+    if (!Number.isInteger(buddhistYear) || buddhistYear < 2400 || buddhistYear > 2700 || !Number.isInteger(month) || month < 1 || month > 12) {
+      setFetchStatus('error', 'วันที่ไม่ถูกต้อง', 'กรุณากำหนดวัน เดือน และปี พ.ศ. ให้ถูกต้อง');
+      return;
+    }
+    const gregorianYear = buddhistYear - 543;
+    const lastDay = new Date(gregorianYear, month, 0).getDate();
+    const day = Math.max(1, Math.min(lastDay, Number.isInteger(requestedDay) ? requestedDay : 1));
+    dateUi.day.value = String(day);
+    el.date.value = `${String(gregorianYear).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    saveRememberedForm();
+    updatePreview();
+  }
+  function shiftHour(time, delta) {
+    const [hh, mm] = (time || '00:00').split(':').map(Number);
+    let total = hh * 60 + mm + delta * 60;
+    total = ((total % 1440) + 1440) % 1440;
+    return `${String(Math.floor(total / 60)).padStart(2,'0')}:${String(total % 60).padStart(2,'0')} น.`;
+  }
+  function formatDotTime(timeText) {
+    const raw = String(timeText || '').replace(' น.','').trim();
+    const parts = raw.split(/[\:\.]/);
+    const hh = String(Number(parts[0] || 0));
+    const mm = String(parts[1] || '00').padStart(2,'0');
+    return `${hh}.${mm}`;
+  }
+
+  function shortStationName(value) {
+    const cleaned = String(value || 'จุด P.1')
+      .replace(/ระดับน้ำปิง/gi, '')
+      .replace(/ล่าสุด/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return cleaned || 'จุด P.1';
+  }
+  function statusFor(level, nMax, rMax) {
+    if (level < nMax) return { label: 'ปกติ', color: C.green, light: C.greenLight, icon: '≈' };
+    if (level <= rMax) return { label: 'เตรียมพร้อม', color: C.orange, light: C.orangeLight, icon: '!' };
+    return { label: 'วิกฤต', color: C.red, light: C.redLight, icon: '!' };
+  }
+  function colorForLevel(level, nMax, rMax) {
+    if (level < nMax) return C.green;
+    if (level <= rMax) return C.orange;
+    return C.red;
+  }
+  function drawWaterIcon(cx, cy, scale, color) {
+    ctx.save();
+    ctx.strokeStyle = color; ctx.lineWidth = 8 * scale; ctx.lineCap = 'round';
+    for (let i=0;i<3;i++) {
+      const yy = cy + i * 19 * scale;
+      ctx.beginPath();
+      ctx.moveTo(cx - 34*scale, yy);
+      ctx.bezierCurveTo(cx - 19*scale, yy-13*scale, cx - 10*scale, yy+13*scale, cx+4*scale, yy);
+      ctx.bezierCurveTo(cx + 18*scale, yy-13*scale, cx + 28*scale, yy+13*scale, cx+42*scale, yy);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawFlagIcon(cx, cy, scale, color) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2.8 * scale;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - 8*scale, cy + 9*scale);
+    ctx.lineTo(cx - 8*scale, cy - 11*scale);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 7*scale, cy - 11*scale);
+    ctx.lineTo(cx + 8*scale, cy - 7*scale);
+    ctx.lineTo(cx - 7*scale, cy - 1*scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  function drawClock(cx, cy, r, color) {
+    circle(cx,cy,r,'transparent',color,5);
+    line(cx,cy,cx,cy-r*.48,color,5);
+    line(cx,cy,cx+r*.40,cy+r*.25,color,5);
+    circle(cx,cy,4,color);
+  }
+  function drawTrendChart(x, y, w, h, values, labels, threshold) {
+    const padL=60, padR=34, padT=86, padB=112;
+    const gx=x+padL, gy=y+padT, gw=w-padL-padR, gh=h-padT-padB;
+    fitText('ระดับน้ำย้อนหลัง 5 ชั่วโมง', x+w/2, y+26, w-50, 31, 22, 700, '#ffffff', 'center');
+    text('ระดับน้ำ (เมตร)', gx-34, y+58, 17, 500, '#ffffff');
+
+    const maxValue = Math.max(...values, threshold.barrier, 4.2);
+    const minValue = Math.min(...values, 2.0);
+    let minY = Math.max(0, Math.floor((minValue - .25) * 2) / 2);
+    let maxY = Math.ceil((maxValue + .25) * 2) / 2;
+    if (maxY - minY < 2.5) maxY = minY + 2.5;
+
+    const yMap = v => gy + gh - ((v - minY) / (maxY - minY)) * gh;
+    const xMap = i => gx + (gw/(values.length-1))*i;
+
+    // dark chart background area
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.85)';
+    ctx.fillRect(gx, gy, gw, gh);
+    ctx.restore();
+
+    const bands = [
+      {from:minY,to:Math.min(threshold.normalMax,maxY),color:'rgba(31,170,95,.12)'},
+      {from:threshold.normalMax,to:Math.min(threshold.readyMax,maxY),color:'rgba(255,176,31,.10)'},
+      {from:threshold.readyMax,to:maxY,color:'rgba(255,69,69,.09)'}
+    ];
+    bands.forEach(b=>{
+      if (b.to <= minY || b.from >= maxY) return;
+      const yy1=yMap(clamp(b.to,minY,maxY)), yy2=yMap(clamp(b.from,minY,maxY));
+      ctx.fillStyle=b.color; ctx.fillRect(gx,yy1,gw,yy2-yy1);
+    });
+
+    const ticks=5;
+    for(let i=0;i<=ticks;i++){
+      const v=minY+(maxY-minY)*(i/ticks); const yy=yMap(v);
+      line(gx,yy,gx+gw,yy,'rgba(133,175,225,.22)',1,[6,6]);
+      text(v.toFixed(2),gx-14,yy,16,600,'#ffffff','right','middle');
+    }
+    line(gx,gy,gx,gy+gh,'#7eb5f0',2);
+    line(gx,gy+gh,gx+gw,gy+gh,'#7eb5f0',2);
+
+    [
+      {v:threshold.normalMax,c:C.orange},
+      {v:threshold.readyMax,c:C.red},
+      {v:threshold.barrier,c:C.red}
+    ].forEach(t=>{
+      if(t.v<minY||t.v>maxY) return;
+      const yy=yMap(t.v); line(gx,yy,gx+gw,yy,t.c,2,[8,7]);
+    });
+
+    const pts=values.map((v,i)=>({x:xMap(i),y:yMap(v),v}));
+    ctx.save(); ctx.beginPath(); ctx.moveTo(pts[0].x,gy+gh); pts.forEach(p=>ctx.lineTo(p.x,p.y)); ctx.lineTo(pts[pts.length-1].x,gy+gh); ctx.closePath();
+    const grd=ctx.createLinearGradient(0,gy,0,gy+gh); grd.addColorStop(0,'rgba(69,176,255,.30)'); grd.addColorStop(1,'rgba(69,176,255,.04)'); ctx.fillStyle=grd; ctx.fill(); ctx.restore();
+    ctx.save(); ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.strokeStyle='#57c2ff'; ctx.lineWidth=5.5; ctx.lineJoin='round'; ctx.shadowColor='transparent'; ctx.shadowBlur=0; ctx.stroke(); ctx.restore();
+
+    pts.forEach((p,i)=>{
+      const fill = colorForLevel(p.v, threshold.normalMax, threshold.readyMax);
+      circle(p.x,p.y,i===pts.length-1?12:9,fill,'#ffffff',3);
+      text(p.v.toFixed(2),p.x,p.y-24,22,800,fill,'center');
+      const label = String(labels[i] || '').trim();
+      ctx.save();
+      ctx.translate(p.x - 18, gy + gh + 58);
+      ctx.rotate(-Math.PI / 5.5);
+      ctx.font = `${i===labels.length-1?800:600} 15px "Prompt", sans-serif`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 0, 0);
+      ctx.restore();
+    });
+  }
+  function thresholdCardCompact(x,y,w,h,color,light,title,value,iconType) {
+    // compact dark card for better compositing on dramatic backgrounds
+    ctx.save();
+    const bg = 'rgba(0,0,0,.85)';
+    panel(x,y,w,h,15,bg,color,false);
+    ctx.restore();
+    circle(x+35,y+h/2,20,'rgba(255,255,255,.08)',color,2);
+    if(iconType==='flag') {
+      ctx.save();
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.moveTo(x+29, y+h/2+10); ctx.lineTo(x+29, y+h/2-11); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x+30, y+h/2-11);
+      ctx.lineTo(x+43, y+h/2-7);
+      ctx.lineTo(x+30, y+h/2-1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    } else if(iconType==='barrier') {
+      ctx.save(); ctx.fillStyle=color;
+      ctx.beginPath(); ctx.moveTo(x+26,y+h/2+10); ctx.lineTo(x+31,y+h/2-10); ctx.lineTo(x+40,y+h/2-10); ctx.lineTo(x+45,y+h/2+10); ctx.closePath(); ctx.fill();
+      line(x+24,y+h/2+11,x+47,y+h/2+11,color,3);
+      ctx.restore();
+    } else text(iconType,x+35,y+h/2+1,22,700,color,'center','middle');
+
+    // center the two text lines vertically more accurately
+    let titleSize = 32;
+    ctx.save();
+    while (titleSize > 21) {
+      ctx.font = `800 ${titleSize}px "Prompt", sans-serif`;
+      if (ctx.measureText(title).width <= (w - 74)) break;
+      titleSize -= 1;
+    }
+    let valueSize = 23;
+    while (valueSize > 17) {
+      ctx.font = `700 ${valueSize}px "Prompt", sans-serif`;
+      if (ctx.measureText(value).width <= (w - 74)) break;
+      valueSize -= 1;
+    }
+    ctx.restore();
+    const textCenterX = x + 62 + ((w - 74) / 2);
+    text(title, textCenterX, y+33, titleSize, 800, '#ffffff', 'center', 'middle');
+    text(value, textCenterX, y+77, valueSize, 700, '#ffffff', 'center', 'middle');
+  }
+
+
+  function setFetchStatus(type, title, detail = '') {
+    autoEl.fetchStatus.className = `fetch-status ${type || ''}`.trim();
+    autoEl.fetchStatus.innerHTML = `<span class="dot"></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span></div>`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  function normalizeApiUrl() {
+    const url = new URL(FIXED_API_URL);
+    url.searchParams.set('station', FIXED_STATION);
+    url.searchParams.set('source', 'auto');
+    url.searchParams.set('allow_stale', '0');
+    url.searchParams.set('max_age', '180');
+    url.searchParams.set('_t', Date.now().toString());
+    return url;
+  }
+
+  function saveRememberedForm() {
+    try {
+      const state = {};
+      rememberedFieldIds.forEach(id => { state[id] = el[id].value; });
+      localStorage.setItem('pingWaterRememberedFormV31', JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function loadRememberedForm() {
+    try {
+      const state = JSON.parse(localStorage.getItem('pingWaterRememberedFormV31') || 'null');
+      if (!state || typeof state !== 'object') return;
+      rememberedFieldIds.forEach(id => {
+        if (state[id] !== undefined && state[id] !== null && state[id] !== '') el[id].value = state[id];
+      });
+    } catch (_) {}
+  }
+
+  function cacheSuccessfulHistory(data) {
+    try {
+      const oldCache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV31') || 'null');
+      const oldPoints = Array.isArray(oldCache?.points) ? oldCache.points.filter(validLevelPoint) : [];
+      let incoming = Array.isArray(data.levels) ? data.levels.filter(validLevelPoint) : [];
+      if (Number.isFinite(Number(data.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') && /^\d{2}:\d{2}$/.test(data.time || '')) {
+        incoming.push({ date: data.date, time: data.time, level: Number(data.latest) });
+      }
+
+      const mergedMap = new Map();
+      [...oldPoints, ...incoming].forEach(p => {
+        if (!validLevelPoint(p)) return;
+        mergedMap.set(`${p.date}T${p.time}`, { date: p.date, time: p.time, level: Number(p.level) });
+      });
+      const points = [...mergedMap.values()]
+        .sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`))
+        .slice(-72);
+
+      localStorage.setItem('pingWaterHistoryCacheV31', JSON.stringify({
+        saved_at: new Date().toISOString(),
+        source: data.source || data.source_key || oldCache?.source || '',
+        data_date: data.date || oldCache?.data_date || '',
+        data_time: data.time || oldCache?.data_time || '',
+        points
+      }));
+      return points;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function bangkokTimeKey(dateText, timeText, offsetHours = 0) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText || '') || !/^\d{2}:\d{2}$/.test(timeText || '')) return '';
+    const ms = Date.parse(`${dateText}T${timeText}:00+07:00`) + offsetHours * 3600000;
+    if (!Number.isFinite(ms)) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date(ms));
+    const get = type => parts.find(p => p.type === type)?.value || '';
+    return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+  }
+
+  function restoreRememberedHistoryOnly() {
+    try {
+      let cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV31') || 'null');
+      // รองรับข้อมูลที่เคยดึงจากระบบเวอร์ชันก่อนหน้า
+      if (!Array.isArray(cache?.points)) {
+        const legacy = JSON.parse(localStorage.getItem('pingWaterLastPayloadV31') || 'null');
+        if (legacy && typeof legacy === 'object') {
+          let legacyPoints = Array.isArray(legacy.levels) ? legacy.levels.filter(validLevelPoint) : [];
+          if (Number.isFinite(Number(legacy.latest)) && /^\d{4}-\d{2}-\d{2}$/.test(legacy.date || '') && /^\d{2}:\d{2}$/.test(legacy.time || '')) {
+            const key = `${legacy.date}T${legacy.time}`;
+            if (!legacyPoints.some(p => `${p.date}T${p.time}` === key)) {
+              legacyPoints.push({ date: legacy.date, time: legacy.time, level: Number(legacy.latest) });
+            }
+          }
+          cache = {
+            saved_at: '', source: legacy.source || legacy.source_key || '',
+            data_date: legacy.date || '', data_time: legacy.time || '', points: legacyPoints
+          };
+        }
+      }
+      const points = Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
+      if (!points.length) return { count: 0, cache: null };
+      points.sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+      const byKey = new Map(points.map(p => [`${p.date}T${p.time}`, p]));
+      const assignments = [['h5',-5],['h4',-4],['h3',-3],['h2',-2],['h1',-1]];
+      let count = 0;
+      const currentDate = el.date.value;
+      const currentTime = el.time.value;
+      if (currentDate && currentTime) {
+        assignments.forEach(([id, offset]) => {
+          const p = byKey.get(bangkokTimeKey(currentDate, currentTime, offset));
+          if (p && Number.isFinite(Number(p.level))) {
+            el[id].value = Number(p.level).toFixed(2);
+            count += 1;
+          }
+        });
+      }
+      if (count === 0) {
+        const last5 = points.slice(-5);
+        const targetIds = ['h5','h4','h3','h2','h1'].slice(5 - last5.length);
+        last5.forEach((p, index) => {
+          if (Number.isFinite(Number(p.level))) {
+            el[targetIds[index]].value = Number(p.level).toFixed(2);
+            count += 1;
+          }
+        });
+      }
+      if (count > 0) {
+        saveRememberedForm();
+        updatePreview();
+      }
+      return { count, cache };
+    } catch (_) {
+      return { count: 0, cache: null };
+    }
+  }
+
+  function validLevelPoint(point) {
+    return point && Number.isFinite(Number(point.level)) && /^\d{4}-\d{2}-\d{2}$/.test(point.date || '') && /^\d{2}:\d{2}$/.test(point.time || '');
+  }
+
+
+  function getBangkokCurrentHour() {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const get = type => parts.find(p => p.type === type)?.value || '';
+    return { date: `${get('year')}-${get('month')}-${get('day')}`, time: `${get('hour')}:00` };
+  }
+
+  function extractRemoteAnchor(data) {
+    const points = Array.isArray(data.levels) ? data.levels.filter(validLevelPoint).sort((a,b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)) : [];
+    const latestPoint = points[points.length - 1] || null;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') ? data.date : latestPoint?.date;
+    const time = /^\d{2}:\d{2}$/.test(data.time || '') ? data.time : latestPoint?.time;
+    return { date, time };
+  }
+
+  function stalePromptKey(sourceDate, sourceTime, targetDate, targetTime) {
+    return `${sourceDate}T${sourceTime}->${targetDate}T${targetTime}`;
+  }
+
+  function getManualCompletion(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem('pingWaterManualCompletionV31') || 'null');
+      return value && value.key === key ? value : null;
+    } catch (_) { return null; }
+  }
+
+  function hideManualPrompt() {
+    pendingManualContext = null;
+    autoEl.manualPromptBox.hidden = true;
+    autoEl.manualFormArea.hidden = true;
+    autoEl.manualOpenBtn.hidden = false;
+    autoEl.manualLatestValue.value = '';
+  }
+
+  function showManualPrompt(sourceDate, sourceTime, targetDate, targetTime) {
+    const key = stalePromptKey(sourceDate, sourceTime, targetDate, targetTime);
+    pendingManualContext = { key, sourceDate, sourceTime, targetDate, targetTime };
+    autoEl.manualPromptBox.hidden = false;
+    autoEl.manualOpenBtn.hidden = false;
+    autoEl.manualFormArea.hidden = true;
+    autoEl.manualPromptText.textContent = `ข้อมูลล่าสุดอยู่ที่ ${formatThaiDate(sourceDate)} เวลา ${formatDotTime(sourceTime)} น. แต่เวลาปัจจุบันคือ ${formatThaiDate(targetDate)} เวลา ${formatDotTime(targetTime)} น.`;
+    autoEl.manualTargetLabel.textContent = `ระดับน้ำเวลา ${formatDotTime(targetTime)} น. (เมตร)`;
+  }
+
+  function restoreManualSnapshot(completion) {
+    const snapshot = completion?.snapshot;
+    if (!snapshot || typeof snapshot !== 'object') return false;
+    rememberedFieldIds.forEach(id => {
+      if (snapshot[id] !== undefined && snapshot[id] !== null && snapshot[id] !== '') el[id].value = snapshot[id];
+    });
+    updatePreview();
+    return true;
+  }
+
+  function buildKnownPointMap(sourceDate, sourceTime) {
+    const map = new Map();
+    const sourceKey = `${sourceDate}T${sourceTime}`;
+    map.set(sourceKey, Number(el.latest.value));
+    [['h1',-1],['h2',-2],['h3',-3],['h4',-4],['h5',-5]].forEach(([id, offset]) => {
+      const key = bangkokTimeKey(sourceDate, sourceTime, offset);
+      const value = Number(el[id].value);
+      if (key && Number.isFinite(value)) map.set(key, value);
+    });
+    try {
+      const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV31') || 'null');
+      const points = Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
+      points.forEach(p => map.set(`${p.date}T${p.time}`, Number(p.level)));
+    } catch (_) {}
+    return map;
+  }
+
+  function nearestKnownAtOrBefore(map, key) {
+    const keys = [...map.keys()].filter(k => k <= key).sort();
+    return keys.length ? map.get(keys[keys.length - 1]) : null;
+  }
+
+  async function submitManualCurrentValue() {
+    if (!pendingManualContext) return;
+    if (getManualCompletion(pendingManualContext.key)) {
+      hideManualPrompt();
+      setFetchStatus('success', 'กรอกข้อมูลเวลานี้แล้ว', 'ระบบป้องกันการเลื่อนข้อมูลซ้ำจากการกดหลายครั้ง');
+      return;
+    }
+
+    const entered = Number(autoEl.manualLatestValue.value);
+    if (!Number.isFinite(entered) || entered < 0) {
+      setFetchStatus('error', 'ค่าระดับน้ำไม่ถูกต้อง', 'กรุณากรอกตัวเลขระดับน้ำ เช่น 1.65');
+      autoEl.manualLatestValue.focus();
+      return;
+    }
+
+    const ctx = pendingManualContext;
+    const pointMap = buildKnownPointMap(ctx.sourceDate, ctx.sourceTime);
+    pointMap.set(`${ctx.targetDate}T${ctx.targetTime}`, entered);
+    let fallbackCount = 0;
+    [['h1',-1],['h2',-2],['h3',-3],['h4',-4],['h5',-5]].forEach(([id, offset]) => {
+      const key = bangkokTimeKey(ctx.targetDate, ctx.targetTime, offset);
+      let value = pointMap.get(key);
+      if (!Number.isFinite(value)) {
+        value = nearestKnownAtOrBefore(pointMap, key);
+        if (Number.isFinite(value)) fallbackCount += 1;
+      }
+      if (Number.isFinite(value)) el[id].value = Number(value).toFixed(2);
+    });
+
+    el.latest.value = entered.toFixed(2);
+    el.date.value = ctx.targetDate;
+    el.time.value = ctx.targetTime;
+    const previous = Number(el.h1.value);
+    el.change.value = Number.isFinite(previous) ? String(Math.round((entered - previous) * 100)) : '0';
+
+    const snapshot = {};
+    rememberedFieldIds.forEach(id => snapshot[id] = el[id].value);
+    localStorage.setItem('pingWaterManualCompletionV31', JSON.stringify({ key: ctx.key, snapshot, savedAt: new Date().toISOString() }));
+    saveRememberedForm();
+    hideManualPrompt();
+    await updatePreview();
+    setFetchStatus('success', 'บันทึกข้อมูลปัจจุบันแล้ว', fallbackCount ? `กรอกสำเร็จหนึ่งครั้ง • ข้อมูลย้อนหลังบางชั่วโมงไม่มี ระบบคงค่าล่าสุดที่มี ${fallbackCount} จุด` : 'กรอกสำเร็จหนึ่งครั้ง และป้องกันการกดซ้ำแล้ว');
+  }
+
+  function isIOSDevice() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function applyRemoteData(data) {
+    let remotePoints = Array.isArray(data.levels) ? data.levels.filter(validLevelPoint) : [];
+    remotePoints.sort((a, b) => `${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`));
+
+    const latestRemote = remotePoints[remotePoints.length - 1] || null;
+    const anchorDate = /^\d{4}-\d{2}-\d{2}$/.test(data.date || '') ? data.date : latestRemote?.date;
+    const anchorTime = /^\d{2}:\d{2}$/.test(data.time || '') ? data.time : latestRemote?.time;
+    const latestLevel = Number.isFinite(Number(data.latest)) ? Number(data.latest) : Number(latestRemote?.level);
+    if (!anchorDate || !anchorTime || !Number.isFinite(latestLevel)) {
+      throw new Error('ข้อมูลที่ได้รับไม่มีวันเวลา หรือค่าระดับน้ำล่าสุดที่ถูกต้อง');
+    }
+
+    el.latest.value = latestLevel.toFixed(2);
+    el.date.value = anchorDate;
+    el.time.value = anchorTime;
+
+    const allCached = (() => {
+      try {
+        const cache = JSON.parse(localStorage.getItem('pingWaterHistoryCacheV31') || 'null');
+        return Array.isArray(cache?.points) ? cache.points.filter(validLevelPoint) : [];
+      } catch (_) { return []; }
+    })();
+    const merged = new Map();
+    [...allCached, ...remotePoints].forEach(p => {
+      if (validLevelPoint(p)) merged.set(`${p.date}T${p.time}`, p);
+    });
+
+    const previousKey = bangkokTimeKey(anchorDate, anchorTime, -1);
+    const previous = merged.get(previousKey);
+    const calculatedChange = previous ? Math.round((latestLevel - Number(previous.level)) * 100) : 0;
+    el.change.value = Number.isFinite(Number(data.change_cm)) ? Math.round(Number(data.change_cm)) : calculatedChange;
+
+    const assignments = [['h5',-5],['h4',-4],['h3',-3],['h2',-2],['h1',-1]];
+    let filled = 0;
+    const missing = [];
+    assignments.forEach(([id, offset]) => {
+      const key = bangkokTimeKey(anchorDate, anchorTime, offset);
+      const point = merged.get(key);
+      if (point && Number.isFinite(Number(point.level))) {
+        el[id].value = Number(point.level).toFixed(2);
+        filled += 1;
+      } else {
+        missing.push(Math.abs(offset));
+      }
+    });
+
+    const code = (data.station || FIXED_STATION).toUpperCase();
+    el.station.value = `ระดับน้ำปิง จุด ${code}`;
+    saveRememberedForm();
+    updatePreview();
+    return { filled, missing };
+  }
+
+  async function fetchLatestData({ silent = false } = {}) {
+    hasRequestedLatestDataThisSession = true;
+    const url = normalizeApiUrl();
+    hideManualPrompt();
+    autoEl.fetchBtn.disabled = true;
+    autoEl.saveBtn.disabled = true;
+    if (!silent) setFetchStatus('loading', 'กำลังดึงข้อมูล…', 'กำลังตรวจสอบสถานี P.1 โปรดรอสักครู่');
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 35000);
+    try {
+      const response = await fetch(url.toString(), { cache: 'no-store', signal: controller.signal });
+      let data;
+      try { data = await response.json(); }
+      catch (_) { throw new Error(`ระบบตัวกลางตอบกลับไม่ใช่ JSON (HTTP ${response.status})`); }
+      if (!response.ok || !data.ok) throw new Error(data.error || `HTTP ${response.status}`);
+
+      cacheSuccessfulHistory(data);
+      const anchor = extractRemoteAnchor(data);
+      if (!anchor.date || !anchor.time) throw new Error('ข้อมูลที่ได้รับไม่มีวันเวลา');
+      const target = getBangkokCurrentHour();
+      const isStale = `${anchor.date}T${anchor.time}` < `${target.date}T${target.time}`;
+      const promptKey = stalePromptKey(anchor.date, anchor.time, target.date, target.time);
+      const completion = getManualCompletion(promptKey);
+      const sourceName = data.source || data.source_key || 'แหล่งข้อมูลต้นทาง';
+
+      if (isStale && completion) {
+        restoreManualSnapshot(completion);
+        hideManualPrompt();
+        setFetchStatus('success', 'ใช้ข้อมูลที่กรอกไว้แล้ว', `ข้อมูลต้นทางยังอยู่ที่ ${formatThaiDate(anchor.date)} เวลา ${formatDotTime(anchor.time)} น. แต่คุณกรอกเวลา ${formatDotTime(target.time)} น. แล้ว ระบบจะไม่เลื่อนข้อมูลซ้ำ`);
+      } else {
+        const applied = applyRemoteData(data);
+        if (isStale) {
+          showManualPrompt(anchor.date, anchor.time, target.date, target.time);
+          setFetchStatus('warning', 'ข้อมูลยังไม่ถึงเวลาปัจจุบัน', `ข้อมูลต้นทางล่าสุด ${formatThaiDate(anchor.date)} เวลา ${formatDotTime(anchor.time)} น. • กรุณากรอกค่าปัจจุบันเพียงครั้งเดียว`);
+        } else {
+          hideManualPrompt();
+          const missingText = applied.missing.length ? ` • ยังไม่พบข้อมูลย้อนหลัง ${applied.missing.sort((a,b)=>b-a).join(', ')} ชั่วโมง` : '';
+          setFetchStatus(applied.missing.length ? 'warning' : 'success', 'อัปเดตข้อมูลสำเร็จ', `${sourceName} • ${formatThaiDate(anchor.date)} เวลา ${formatDotTime(anchor.time)} น.${missingText}`);
+        }
+      }
+
+      localStorage.setItem('pingWaterLastPayloadV31', JSON.stringify(data));
+      return true;
+    } catch (error) {
+      const message = error.name === 'AbortError' ? 'หมดเวลารอการตอบกลับ กรุณาลองใหม่' : error.message;
+      const restored = restoreRememberedHistoryOnly();
+      const target = getBangkokCurrentHour();
+      if (el.date.value && el.time.value && `${el.date.value}T${el.time.value}` < `${target.date}T${target.time}`) {
+        const key = stalePromptKey(el.date.value, el.time.value, target.date, target.time);
+        const completion = getManualCompletion(key);
+        if (completion) {
+          restoreManualSnapshot(completion);
+          hideManualPrompt();
+        } else {
+          showManualPrompt(el.date.value, el.time.value, target.date, target.time);
+        }
+      }
+      setFetchStatus(restored.count > 0 ? 'warning' : 'error', restored.count > 0 ? 'ดึงข้อมูลไม่ได้ — ใช้ข้อมูลที่จำไว้' : 'ดึงข้อมูลไม่สำเร็จ', `${message}${restored.count > 0 ? ` • เติมข้อมูลย้อนหลังได้ ${restored.count} ค่า` : ''}`);
+      return false;
+    } finally {
+      clearTimeout(timeout);
+      autoEl.fetchBtn.disabled = false;
+      autoEl.saveBtn.disabled = false;
+    }
+  }
+
+  function reportStationLabel() {
+    return `${shortStationName(el.station.value)} สะพานนวรัฐ`.replace(/\s+/g, ' ').trim();
+  }
+
+  function buildReportText() {
+    const latest = num(el.latest.value, 0);
+    const change = Math.round(num(el.change.value, 0));
+    const nMax = num(el.normalMax.value, 3);
+    const rMax = num(el.readyMax.value, 3.70);
+    const status = statusFor(latest, nMax, rMax);
+    const dateText = formatThaiDate(el.date.value);
+    const timeText = formatDotTime(el.time.value || '--:--');
+    const signed = change > 0 ? `+${Math.abs(change)}` : change < 0 ? `-${Math.abs(change)}` : '0';
+    const historyLines = [
+      { time: shiftHour(el.time.value || '00:00', -1), value: num(el.h1.value, 0) },
+      { time: shiftHour(el.time.value || '00:00', -2), value: num(el.h2.value, 0) },
+      { time: shiftHour(el.time.value || '00:00', -3), value: num(el.h3.value, 0) },
+      { time: shiftHour(el.time.value || '00:00', -4), value: num(el.h4.value, 0) },
+      { time: shiftHour(el.time.value || '00:00', -5), value: num(el.h5.value, 0) }
+    ].map(item => `${formatDotTime(item.time)} น. : ${item.value.toFixed(2)} เมตร`);
+
+    return [
+      `อัปเดต ‼ ระดับน้ำปิง ${reportStationLabel()}`,
+      `วันที่ ${dateText} เวลา ${timeText} น.`,
+      '.',
+      `ระดับน้ำล่าสุด : ${latest.toFixed(2)} เมตร`,
+      `เปลี่ยนแปลง : ${signed} เซนติเมตร`,
+      `สถานะ : ${status.label}`,
+      '.',
+      'ระดับน้ำย้อนหลัง 5 ชั่วโมง',
+      ...historyLines
+    ].join('\n');
+  }
+
+  function updateReportText() {
+    if (!autoEl.reportText) return;
+    autoEl.reportText.value = buildReportText();
+  }
+
+  async function copyReportText() {
+    const value = String(autoEl.reportText?.value || '').trim();
+    if (!value) return;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        autoEl.reportText.focus();
+        autoEl.reportText.select();
+        document.execCommand('copy');
+      }
+      autoEl.copyReportBtn.textContent = 'คัดลอกแล้ว';
+      autoEl.copyStatus.textContent = 'คัดลอกข้อความเรียบร้อย พร้อมนำไปโพสต์ได้เลย';
+      autoEl.copyStatus.style.color = '#06964e';
+      setTimeout(() => {
+        autoEl.copyReportBtn.textContent = 'คัดลอกข้อความรายงาน';
+        autoEl.copyStatus.textContent = 'ระบบจะสรุปข้อความให้อัตโนมัติจากข้อมูลปัจจุบัน';
+        autoEl.copyStatus.style.color = '#5f7693';
+      }, 1800);
+    } catch (_) {
+      autoEl.copyStatus.textContent = 'คัดลอกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
+      autoEl.copyStatus.style.color = '#df2734';
+    }
+  }
+
+  function render(scaleOverride) {
+    const outSize = scaleOverride || 1200;
+    canvas.width = outSize; canvas.height = outSize;
+    const s = outSize/1200;
+    ctx.setTransform(s,0,0,s,0,0);
+    ctx.clearRect(0,0,1200,1200);
+
+    const transparent = el.transparent.checked;
+    if(!transparent){
+      const bg=ctx.createLinearGradient(0,0,1200,1200); bg.addColorStop(0,'#edf7ff'); bg.addColorStop(1,'#dfefff');
+      ctx.fillStyle=bg; ctx.fillRect(0,0,1200,1200);
+    }
+
+    const latest=num(el.latest.value,0), change=num(el.change.value,0);
+    const nMax=num(el.normalMax.value,3), rMax=num(el.readyMax.value,3.70), cMin=num(el.criticalMin.value,3.70), barrier=num(el.barrier.value,4.2);
+    const status=statusFor(latest,nMax,rMax);
+    const dateText=formatThaiDate(el.date.value), timeText=el.time.value || '--:--';
+
+    // Header: dramatic, clear, and without repeated information
+    const headerGrad=ctx.createLinearGradient(28,24,1172,174);
+    headerGrad.addColorStop(0,'#031d4b');
+    headerGrad.addColorStop(.52,'#062d72');
+    headerGrad.addColorStop(1,'#020f2f');
+    panel(28,24,1144,150,28,headerGrad,'#2f79df',true);
+
+    // subtle electric accents
+    ctx.save();
+    ctx.globalAlpha=.30; ctx.strokeStyle='#45a7ff'; ctx.lineWidth=2;
+    [[770,42,735,72,790,78,748,118],[1050,32,1004,70,1062,79,1015,130],[560,30,525,63,574,76,538,115]].forEach(p=>{
+      ctx.beginPath(); ctx.moveTo(p[0],p[1]); ctx.lineTo(p[2],p[3]); ctx.lineTo(p[4],p[5]); ctx.lineTo(p[6],p[7]); ctx.stroke();
+    });
+    ctx.restore();
+
+    circle(96,99,50,'rgba(7,91,210,.32)','#41a8ff',3);
+    ctx.save(); ctx.fillStyle=C.white; ctx.beginPath(); ctx.moveTo(96,58); ctx.bezierCurveTo(73,84,70,94,70,108); ctx.bezierCurveTo(70,125,82,137,96,137); ctx.bezierCurveTo(112,137,122,124,122,108); ctx.bezierCurveTo(122,94,112,79,96,58); ctx.fill(); ctx.restore();
+    drawWaterIcon(96,110,.34,C.blue);
+
+    const alertGrad=ctx.createLinearGradient(160,48,405,118); alertGrad.addColorStop(0,'#ff2c2c'); alertGrad.addColorStop(1,'#a90000');
+    ctx.save(); roundedRect(162,47,242,70,14); ctx.fillStyle=alertGrad; ctx.fill(); ctx.restore();
+    text('อัปเดต!',283,92,50,800,C.white,'center','middle');
+    fitText('ระดับน้ำปิง',430,99,700,60,46,800,C.white,'left','middle');
+    text(`${dateText}  เวลา ${timeText} น.`,640,145,27,600,'#dcecff','center');
+
+    // Left chart panel - dark glass style for better compositing in news graphics
+    const darkPanel = 'rgba(0,0,0,.85)';
+    const darkStroke = '#4bb8ff';
+    panel(28,194,472,690,28,darkPanel,darkStroke,true);
+    drawTrendChart(40,210,448,655,
+      [num(el.h5.value),num(el.h4.value),num(el.h3.value),num(el.h2.value),num(el.h1.value),latest],
+      [
+        `${formatDotTime(shiftHour(timeText,-5).replace(' น.','').replace(':','.'))} น.`,
+        `${formatDotTime(shiftHour(timeText,-4).replace(' น.','').replace(':','.'))} น.`,
+        `${formatDotTime(shiftHour(timeText,-3).replace(' น.','').replace(':','.'))} น.`,
+        `${formatDotTime(shiftHour(timeText,-2).replace(' น.','').replace(':','.'))} น.`,
+        `${formatDotTime(shiftHour(timeText,-1).replace(' น.','').replace(':','.'))} น.`,
+        `${formatDotTime(timeText.replace(':','.'))} น.`
+      ],
+      {normalMax:nMax,readyMax:rMax,criticalMin:cMin,barrier}
+    );
+
+    // Right current panel - dark glass style
+    panel(522,194,650,690,28,darkPanel,darkStroke,true);
+    const topGrad=ctx.createLinearGradient(524,196,1170,274); topGrad.addColorStop(0,'#34bdff'); topGrad.addColorStop(.48,'#1986ff'); topGrad.addColorStop(1,'#0a5bd6');
+    ctx.save(); roundedRect(524,196,646,78,26); ctx.clip(); ctx.fillStyle=topGrad; ctx.fillRect(524,196,646,78); ctx.fillStyle='rgba(255,255,255,.16)'; ctx.fillRect(524,196,646,2); ctx.restore();
+    fitText(`${shortStationName(el.station.value)} สะพานนวรัฐ`,847,246,610,42,29,700,'#ffffff','center');
+
+    // subtle water pattern in dark style
+    ctx.save(); roundedRect(522,276,650,608,0); ctx.clip(); ctx.globalAlpha=.10; ctx.strokeStyle='#71c6ff'; ctx.lineWidth=4;
+    for(let yy=650;yy<890;yy+=36){ ctx.beginPath(); for(let xx=506;xx<1204;xx+=10){ const py=yy+Math.sin(xx/39)*9; xx===506?ctx.moveTo(xx,py):ctx.lineTo(xx,py); } ctx.stroke(); }
+    ctx.restore();
+
+    text(`เวลา ${formatDotTime(timeText)} น.`,847,362,44,700,'#dfefff','center');
+
+    // current water-level number: solid color only, no outline and no glow
+    ctx.save();
+    ctx.font = `800 208px "Prompt", sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillStyle=status.color;
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+    ctx.fillText(latest.toFixed(2),847,542);
+    ctx.restore();
+    ctx.save();
+    ctx.font = `700 60px "Prompt", sans-serif`;
+    const meterText = 'เมตร';
+    const meterX = alignedCanvasTextX(ctx, meterText, 847, 'center');
+    ctx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : 'center';
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(3,13,40,.68)';
+    ctx.strokeText(meterText,meterX,612);
+    ctx.fillStyle='#ffffff'; ctx.fillText(meterText,meterX,612);
+    ctx.restore();
+
+    const changeColor = change > 0 ? C.red : change < 0 ? C.green : C.orange;
+    panel(606,666,482,92,18,'rgba(0,0,0,.85)',changeColor,false);
+    const arrow = change > 0 ? '↑' : change < 0 ? '↓' : '→';
+    const signed = change > 0 ? `+${Math.abs(change)}` : change < 0 ? `-${Math.abs(change)}` : '0';
+    text(`${arrow} ${signed} เซนติเมตร`,847,731,52,800,changeColor,'center');
+
+    panel(606,782,482,62,17,'rgba(0,0,0,.85)',status.color,false);
+    circle(645,813,20,'rgba(255,255,255,.08)',status.color,2);
+    drawFlagIcon(645,813,1,C.white);
+    fitText(status.label,867,823,395,32,23,800,'#ffffff','center');
+
+    // Threshold section with clean divider
+    line(28,916,565,916,'rgba(122,188,255,.75)',2.5);
+    circle(580,916,5,'#46beff');
+    line(595,916,1172,916,'rgba(122,188,255,.75)',2.5);
+    const cardY=930, cardW=270, cardH=108, gap=16;
+    const thresholdTotalW = cardW * 4 + gap * 3;
+    const thresholdStartX = Math.round((1200 - thresholdTotalW) / 2);
+    thresholdCardCompact(thresholdStartX,cardY,cardW,cardH,C.green,C.greenLight,'ปกติ',`ต่ำกว่า ${nMax.toFixed(2)} เมตร`,'flag');
+    thresholdCardCompact(thresholdStartX+(cardW+gap),cardY,cardW,cardH,C.orange,C.orangeLight,'เตรียมพร้อม',`${nMax.toFixed(2)}–${rMax.toFixed(2)} เมตร`,'flag');
+    thresholdCardCompact(thresholdStartX+(cardW+gap)*2,cardY,cardW,cardH,C.red,C.redLight,'วิกฤต',`สูงกว่า ${rMax.toFixed(2)} เมตร`,'flag');
+    thresholdCardCompact(thresholdStartX+(cardW+gap)*3,cardY,cardW,cardH,C.purple,C.purpleLight,'เสริมแนวคันกั้น',`${barrier.toFixed(2)} เมตร`,'barrier');
+    ctx.setTransform(1,0,0,1,0,0);
+  }
+
+
+  function loadBackgroundImage() {
+    if (!backgroundImagePromise) {
+      backgroundImagePromise = new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('เปิดรูปต้นฉบับไม่สำเร็จ'));
+        img.src = EMBEDDED_BACKGROUND_IMAGE;
+      });
+    }
+    return backgroundImagePromise;
+  }
+
+  function buildOverlayCanvas(exportSize) {
+    render(exportSize);
+    const cropTop = Math.round(exportSize * (190 / 1200));
+    const cropBottom = Math.round(exportSize * (1080 / 1200));
+    const cropHeight = Math.max(1, cropBottom - cropTop);
+    const overlayCanvas = document.createElement('canvas');
+    overlayCanvas.width = exportSize;
+    overlayCanvas.height = cropHeight;
+    const overlayCtx = overlayCanvas.getContext('2d');
+    overlayCtx.clearRect(0,0,overlayCanvas.width,overlayCanvas.height);
+    overlayCtx.drawImage(canvas, 0, cropTop, exportSize, cropHeight, 0, 0, exportSize, cropHeight);
+    return overlayCanvas;
+  }
+
+  async function renderComposite(targetCanvas, exportSize = 1200) {
+    await ensurePromptFontReady();
+    const background = await loadBackgroundImage();
+    const overlayCanvas = buildOverlayCanvas(exportSize);
+    const scale = exportSize / 1200;
+    const outW = Math.round(background.naturalWidth * scale);
+    const outH = Math.round(background.naturalHeight * scale);
+    targetCanvas.width = outW;
+    targetCanvas.height = outH;
+    const targetCtx = targetCanvas.getContext('2d');
+    targetCtx.clearRect(0,0,outW,outH);
+    targetCtx.drawImage(background, 0, 0, outW, outH);
+
+    const drawW = outW * COMPOSITE_POS.overlayScale;
+    const drawH = drawW * (overlayCanvas.height / overlayCanvas.width);
+    const x = outW * COMPOSITE_POS.overlayX;
+    const y = outH * COMPOSITE_POS.overlayY;
+    targetCtx.drawImage(overlayCanvas, x, y, drawW, drawH);
+
+    const dateText = formatThaiDate(el.date.value);
+    const dateX = outW * COMPOSITE_POS.dateX;
+    const dateY = outH * COMPOSITE_POS.dateY;
+    const baseDateSize = Math.max(26, Math.round(outW * 0.035)) + 7;
+    targetCtx.save();
+    targetCtx.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : 'center';
+    targetCtx.textBaseline = 'middle';
+
+    let dateSize = baseDateSize;
+    const maxDateWidth = outW * 0.26;
+    let measuredDateWidth = 0;
+    for (let reduce = 0; reduce <= 3; reduce += 1) {
+      dateSize = baseDateSize - reduce;
+      targetCtx.font = `600 ${dateSize}px "Prompt", sans-serif`;
+      measuredDateWidth = targetCtx.measureText(dateText).width;
+      if (measuredDateWidth <= maxDateWidth || reduce === 3) break;
+    }
+
+    const overflowWidth = Math.max(0, measuredDateWidth - maxDateWidth);
+    const adjustedDateX = dateX + (overflowWidth / 2);
+
+    targetCtx.shadowColor = 'rgba(0,0,0,.90)';
+    targetCtx.shadowBlur = Math.max(5, Math.round(dateSize * 0.28));
+    targetCtx.shadowOffsetX = Math.max(2, Math.round(dateSize * 0.06));
+    targetCtx.shadowOffsetY = Math.max(3, Math.round(dateSize * 0.10));
+    targetCtx.lineWidth = Math.max(1.5, dateSize * 0.045);
+    targetCtx.strokeStyle = 'rgba(0,0,0,.48)';
+    const renderedDateX = alignedCanvasTextX(targetCtx, dateText, adjustedDateX, 'center');
+    targetCtx.strokeText(dateText, renderedDateX, dateY);
+    targetCtx.fillStyle = '#ffffff';
+    targetCtx.fillText(dateText, renderedDateX, dateY);
+    targetCtx.restore();
+  }
+
+  async function updatePreview(){
+    syncManualDateFieldsFromIso();
+    updateReportText();
+    const previewSize = 1200;
+    await ensurePromptFontReady();
+    await renderComposite(canvas, previewSize);
+  }
+  ids.forEach(id => { el[id].addEventListener(id==='transparent'?'change':'input',updatePreview); });
+  [dateUi.day, dateUi.month, dateUi.year].forEach(control => control.addEventListener('change', syncIsoDateFromManualFields));
+
+  document.getElementById('resetBtn').addEventListener('click',()=>{
+    hideManualPrompt();
+    Object.entries(defaults).forEach(([k,v])=>{
+      if(k==='transparent') el[k].checked=v; else el[k].value=v;
+    });
+    saveRememberedForm();
+    updatePreview();
+  });
+
+
+  autoEl.fetchBtn.addEventListener('click', () => fetchLatestData());
+  autoEl.manualOpenBtn.addEventListener('click', () => {
+    if (!pendingManualContext) return;
+    autoEl.manualOpenBtn.hidden = true;
+    autoEl.manualFormArea.hidden = false;
+    autoEl.manualLatestValue.focus();
+  });
+  autoEl.manualSubmitBtn.addEventListener('click', submitManualCurrentValue);
+  autoEl.manualLatestValue.addEventListener('keydown', event => {
+    if (event.key === 'Enter') submitManualCurrentValue();
+  });
+  autoEl.copyReportBtn.addEventListener('click', copyReportText);
+  rememberedFieldIds.forEach(id => el[id].addEventListener('input', saveRememberedForm));
+
+  async function saveOrShareImage() {
+    if (!hasRequestedLatestDataThisSession) {
+      const actionLabel = isIOSDevice() ? 'แชร์รูป' : 'บันทึกรูป';
+      alert(`ยังไม่ได้กดดึงข้อมูลล่าสุด
+
+กรุณากดปุ่ม “ดึงข้อมูล” ก่อน แล้วจึงกด${actionLabel}อีกครั้ง`);
+      setFetchStatus('warning', 'ยังไม่ได้ดึงข้อมูลล่าสุด', `กรุณากด “ดึงข้อมูล” ก่อน${actionLabel}`);
+      autoEl.fetchBtn.focus();
+      return;
+    }
+    await ensurePromptFontReady();
+    autoEl.saveBtn.disabled = true;
+    try {
+      const exportSize = parseInt(el.size.value,10) || 1200;
+      const exportCanvas = document.createElement('canvas');
+      await renderComposite(exportCanvas, exportSize);
+      const stamp = (el.date.value || 'date') + '_' + (el.time.value || 'time').replace(':','-');
+      const filename = `water-level-P1_${stamp}.png`;
+
+      if (isIOSDevice() && navigator.share) {
+        const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/png'));
+        if (!blob) throw new Error('สร้างไฟล์รูปไม่สำเร็จ');
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'รายงานระดับน้ำปิง P.1' });
+          setFetchStatus('success', 'แชร์รูปแล้ว', 'เปิดเมนูแชร์ของ iOS เรียบร้อย');
+          return;
+        }
+      }
+
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href = exportCanvas.toDataURL('image/png');
+      a.click();
+      setFetchStatus('success', 'บันทึกรูปแล้ว', 'สร้างไฟล์ PNG เรียบร้อย');
+    } catch (error) {
+      if (error?.name !== 'AbortError') setFetchStatus('error', 'บันทึกหรือแชร์ไม่สำเร็จ', error.message || 'กรุณาลองใหม่');
+    } finally {
+      autoEl.saveBtn.disabled = false;
+      requestAnimationFrame(() => updatePreview());
+    }
+  }
+
+  autoEl.saveBtn.addEventListener('click', saveOrShareImage);
+  autoEl.saveBtn.textContent = isIOSDevice() ? 'แชร์รูป' : 'บันทึกรูป';
+
+  initializeThaiDateControls();
+  loadRememberedForm();
+  syncManualDateFieldsFromIso();
+  ensurePromptFontReady().then(updatePreview).catch(updatePreview);
+})();
+</script>
+</body>
+</html>

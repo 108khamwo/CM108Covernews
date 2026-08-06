@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ระบบรายงานระดับน้ำปิง 2 จุด — ตารางบนภาพพื้นหลัง</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=block" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Prompt/Prompt.css" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: "Prompt";
+      src: url("https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Prompt/Prompt-Medium.woff2") format("woff2");
+      font-style: normal;
+      font-weight: 500;
+      font-display: block;
+    }
+    :root {
+      --navy:#0a2f72; --blue:#0b61d8; --light:#eef7ff; --border:#c9ddf5;
+      --text:#102b55; --muted:#58708f; --panel:#fff; --shadow:0 18px 50px rgba(9,62,128,.16);
+    }
+    * { box-sizing:border-box; }
+    html,body,button,input,select,textarea,summary { font-family:"Prompt",Tahoma,"Noto Sans Thai",Arial,sans-serif !important; }
+    body { margin:0; min-height:100vh; color:var(--text); background:linear-gradient(135deg,#eaf5ff,#f8fbff 50%,#eaf4ff); }
+    .app { max-width:980px; margin:0 auto; padding:14px; }
+    .controls { background:rgba(255,255,255,.97); border:1px solid #d6e6f7; border-radius:24px; box-shadow:var(--shadow); padding:18px; margin-bottom:14px; }
+    h1 { font-size:24px; margin:0; color:var(--navy); }
+    .lead { margin:6px 0 14px; color:var(--muted); font-size:13px; line-height:1.55; }
+    .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    button { appearance:none; border:0; border-radius:13px; padding:12px 14px; font:inherit; font-weight:800; cursor:pointer; transition:.15s ease; }
+    button:hover { filter:brightness(1.03); }
+    button:active { transform:translateY(1px); }
+    button[disabled] { cursor:wait; opacity:.65; }
+    .fetch-button { color:#fff; background:linear-gradient(135deg,#06964e,#04753e); box-shadow:0 8px 20px rgba(4,117,62,.20); }
+    .save-button { color:#fff; background:linear-gradient(135deg,#0b65df,#0849b8); box-shadow:0 9px 22px rgba(5,86,196,.24); }
+    .fetch-status { display:flex; align-items:flex-start; gap:9px; margin-top:12px; padding:10px 11px; border-radius:11px; background:#fff; border:1px solid #d8e6f4; font-size:12px; line-height:1.45; color:#4f6987; }
+    .fetch-status .dot { width:10px; height:10px; border-radius:50%; margin-top:3px; flex:0 0 auto; background:#8aa0b8; }
+    .fetch-status.loading .dot { background:#ee8a00; box-shadow:0 0 0 4px rgba(238,138,0,.12); }
+    .fetch-status.success .dot { background:#06964e; box-shadow:0 0 0 4px rgba(6,150,78,.12); }
+    .fetch-status.error .dot { background:#df2734; box-shadow:0 0 0 4px rgba(223,39,52,.12); }
+    .fetch-status.warning .dot { background:#ee8a00; box-shadow:0 0 0 4px rgba(238,138,0,.12); }
+    .fetch-status strong { display:block; color:#173f70; margin-bottom:2px; }
+    .manual-prompts { display:grid; gap:10px; margin-top:12px; }
+    .manual-prompt { border:1px solid #f1c36b; background:#fff9e9; border-radius:15px; padding:13px; }
+    .manual-prompt[hidden] { display:none !important; }
+    .manual-prompt strong { color:#8a5700; display:block; margin-bottom:4px; }
+    .manual-prompt p { margin:0 0 10px; color:#755d2d; font-size:13px; line-height:1.5; }
+    .manual-form { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end; }
+    .manual-submit { min-width:145px; height:45px; color:#fff; background:linear-gradient(135deg,#e78b00,#bd6700); }
+    details.advanced { margin-top:12px; border:1px solid #d6e6f7; border-radius:15px; background:#f8fbff; overflow:hidden; }
+    details.advanced > summary { cursor:pointer; padding:13px 15px; font-weight:800; color:#315d8d; user-select:none; list-style:none; }
+    details.advanced > summary::-webkit-details-marker { display:none; }
+    details.advanced > summary::after { content:'▾'; float:right; }
+    details.advanced[open] > summary::after { content:'▴'; }
+    .advanced-inner { padding:0 15px 16px; }
+    .section-title { font-weight:800; margin:18px 0 10px; padding-bottom:8px; border-bottom:1px solid #e3edf8; color:var(--navy); }
+    .station-section { border:1px solid #cfe2f6; border-radius:16px; padding:13px; margin-top:12px; background:linear-gradient(145deg,#fbfdff,#f0f8ff); }
+    .station-section.p67 { border-top:5px solid #24c9ff; }
+    .station-section.p1 { border-top:5px solid #ffb31a; }
+    .station-section.is-hidden { display:none; }
+    .station-head { font-size:15px; font-weight:800; color:#0a397d; margin-bottom:10px; }
+    .field { margin-bottom:10px; }
+    label { display:block; font-size:12px; font-weight:700; margin-bottom:5px; color:#294f7d; }
+    input,select,textarea { width:100%; padding:10px 11px; border:1px solid #cbdced; border-radius:10px; background:#fff; color:#183b66; font:inherit; font-size:13px; outline:none; }
+    input:focus,select:focus,textarea:focus { border-color:#4e98e8; box-shadow:0 0 0 3px rgba(65,145,230,.12); }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .history-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+    .history-grid .field { margin-bottom:0; }
+    .actions { display:grid; grid-template-columns:1fr; gap:10px; margin-top:12px; }
+    .secondary { color:#174c87; background:#e8f3ff; }
+    .report-box { margin-top:14px; border:1px solid #cfe0f5; border-radius:16px; background:#f8fbff; padding:14px; }
+    .report-text { min-height:300px; resize:vertical; line-height:1.6; white-space:pre-wrap; }
+    .copy-button { width:100%; margin-top:10px; color:#fff; background:linear-gradient(135deg,#8b2cff,#5a13bf); }
+    .copy-status { font-size:12px; color:#5f7693; margin-top:8px; }
+    .preview-wrap { display:flex; flex-direction:column; gap:8px; }
+    .preview-toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; background:rgba(255,255,255,.92); border:1px solid #d6e6f7; border-radius:17px; padding:10px 13px; box-shadow:0 9px 30px rgba(9,62,128,.09); color:#355b88; font-size:14px; }
+    .canvas-shell { width:100%; padding:10px; border-radius:18px; background:linear-gradient(45deg,#e7eef7 25%,transparent 25%),linear-gradient(-45deg,#e7eef7 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e7eef7 75%),linear-gradient(-45deg,transparent 75%,#e7eef7 75%); background-size:28px 28px; background-position:0 0,0 14px,14px -14px,-14px 0; box-shadow:var(--shadow); }
+    canvas { display:block; width:100%; height:auto; max-width:100%; }
+    .hint { color:#607895; font-size:12px; line-height:1.5; padding:0 2px 8px; }
+    @media (max-width:640px) {
+      .app { padding:8px; } .controls { padding:14px; border-radius:18px; } h1 { font-size:21px; }
+      .quick-actions { gap:8px; } .quick-actions button { font-size:14px; padding:11px 8px; }
+      .grid2,.history-grid,.manual-form { grid-template-columns:1fr; }
+      .manual-submit { width:100%; } .preview-toolbar { align-items:flex-start; flex-direction:column; }
+    }
+  </style>
+
+<style id="combined-shell-style">
+#fetchBtn{display:none!important}
+.quick-actions{grid-template-columns:1fr!important}
+body{overflow-x:hidden!important}
+</style>
+</head>
+<body>
+  <main class="app">
+    <section class="controls">
+      <h1>รายงานระดับน้ำปิง 2 จุด</h1>
+      <p class="lead">กดดึงข้อมูล แล้วกดบันทึกรูปได้เลย ระบบตรวจข้อมูลล่าช้าและให้กรอกค่าปัจจุบันเพียงครั้งเดียวแยกแต่ละจุด</p>
+      <div class="quick-actions">
+        <button class="fetch-button" id="fetchBtn" type="button">ดึงข้อมูลทั้ง 2 จุด</button>
+        <button class="save-button" id="saveBtn" type="button">บันทึกรูป</button>
+      </div>
+      <div class="fetch-status" id="fetchStatus" role="status" aria-live="polite">
+        <span class="dot"></span><div><strong>พร้อมใช้งาน</strong><span>กดดึงข้อมูลเพื่ออัปเดต P.67 และ P.1</span></div>
+      </div>
+      <div class="manual-prompts">
+        <div class="manual-prompt" id="p67ManualPrompt" hidden>
+          <strong id="p67ManualTitle">ข้อมูล P.67 ยังไม่ถึงเวลาปัจจุบัน</strong>
+          <p id="p67ManualText"></p>
+          <div class="manual-form">
+            <div class="field"><label id="p67ManualLabel" for="p67ManualValue">ระดับน้ำปัจจุบัน (เมตร)</label><input id="p67ManualValue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 2.35"></div>
+            <button class="manual-submit" id="p67ManualSubmit" type="button">ยืนยันครั้งเดียว</button>
+          </div>
+        </div>
+        <div class="manual-prompt" id="p1ManualPrompt" hidden>
+          <strong id="p1ManualTitle">ข้อมูล P.1 ยังไม่ถึงเวลาปัจจุบัน</strong>
+          <p id="p1ManualText"></p>
+          <div class="manual-form">
+            <div class="field"><label id="p1ManualLabel" for="p1ManualValue">ระดับน้ำปัจจุบัน (เมตร)</label><input id="p1ManualValue" type="number" min="0" step="0.01" inputmode="decimal" placeholder="เช่น 2.80"></div>
+            <button class="manual-submit" id="p1ManualSubmit" type="button">ยืนยันครั้งเดียว</button>
+          </div>
+        </div>
+      </div>
+
+      <details class="advanced" id="advancedSettings">
+        <summary>เปิดแก้ไขข้อมูลและตั้งค่า</summary>
+        <div class="advanced-inner">
+          <div class="section-title">รูปแบบรายงาน</div>
+          <div class="grid2">
+            <div class="field"><label for="displayMode">จุดที่แสดงในภาพ</label><select id="displayMode"><option value="both" selected>ทั้ง 2 จุด — P.67 และ P.1</option><option value="p67">เฉพาะ P.67</option><option value="p1">เฉพาะ P.1</option></select></div>
+            <div class="field"><label for="orderMode">ลำดับเวลา</label><select id="orderMode"><option value="latestTop" selected>ล่าสุดอยู่บนสุด</option><option value="latestBottom">ล่าสุดอยู่ล่างสุด</option></select></div>
+          </div>
+
+          <div class="station-section p67" data-station="p67">
+            <div class="station-head">P.67 บ้านแม่แต สันทราย — ระดับตลิ่ง 3.00 เมตร</div>
+            <div class="field"><label for="p67_name">ชื่อจุดตรวจวัด</label><input id="p67_name" value="P.67 บ้านแม่แต สันทราย"></div>
+            <div class="grid2">
+              <div class="field"><label for="p67_latest">ระดับล่าสุด (เมตร)</label><input id="p67_latest" type="number" min="0" step="0.01" value="2.35"></div>
+              <div class="field"><label for="p67_change">เปลี่ยนแปลงจากชั่วโมงก่อน (ซม.)</label><input id="p67_change" type="number" step="1" value="1"></div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="p67_date">วันที่ล่าสุด</label><input id="p67_date" type="date" value="2026-08-06"></div>
+              <div class="field"><label for="p67_time">เวลาล่าสุด</label><input id="p67_time" type="time" value="10:00"></div>
+            </div>
+            <div class="section-title" style="margin-top:9px">ย้อนหลัง 9 ชั่วโมง (แสดงในภาพ 8 ชั่วโมง)</div>
+            <div class="history-grid" id="p67HistoryFields"></div>
+          </div>
+
+          <div class="station-section p1" data-station="p1">
+            <div class="station-head">P.1 สะพานนวรัฐ — ระดับตลิ่ง 3.70 เมตร</div>
+            <div class="field"><label for="p1_name">ชื่อจุดตรวจวัด</label><input id="p1_name" value="P.1 สะพานนวรัฐ"></div>
+            <div class="grid2">
+              <div class="field"><label for="p1_latest">ระดับล่าสุด (เมตร)</label><input id="p1_latest" type="number" min="0" step="0.01" value="2.80"></div>
+              <div class="field"><label for="p1_change">เปลี่ยนแปลงจากชั่วโมงก่อน (ซม.)</label><input id="p1_change" type="number" step="1" value="1"></div>
+            </div>
+            <div class="grid2">
+              <div class="field"><label for="p1_date">วันที่ล่าสุด</label><input id="p1_date" type="date" value="2026-08-06"></div>
+              <div class="field"><label for="p1_time">เวลาล่าสุด</label><input id="p1_time" type="time" value="10:00"></div>
+            </div>
+            <div class="section-title" style="margin-top:9px">ย้อนหลัง 9 ชั่วโมง (แสดงในภาพ 8 ชั่วโมง)</div>
+            <div class="history-grid" id="p1HistoryFields"></div>
+          </div>
+
+          <div class="section-title">เกณฑ์สีระดับน้ำ</div>
+          <div class="grid2">
+            <div class="field"><label for="p67_normalMax">P.67 เริ่มเฝ้าระวัง</label><input id="p67_normalMax" type="number" step="0.01" value="2.20"></div>
+            <div class="field"><label for="p67_criticalMin">P.67 ระดับตลิ่ง</label><input id="p67_criticalMin" type="number" step="0.01" value="3.00"></div>
+            <div class="field"><label for="p1_normalMax">P.1 เริ่มเฝ้าระวัง</label><input id="p1_normalMax" type="number" step="0.01" value="3.00"></div>
+            <div class="field"><label for="p1_criticalMin">P.1 ระดับตลิ่ง</label><input id="p1_criticalMin" type="number" step="0.01" value="3.70"></div>
+          </div>
+
+          <div class="section-title">การส่งออก</div>
+          <div class="field"><label for="size">ขนาดไฟล์ PNG</label><select id="size"><option value="960" selected>960 × 1200 px</option></select></div>
+          <div class="actions"><button class="secondary" id="resetBtn" type="button">คืนค่าตัวอย่าง</button></div>
+        </div>
+      </details>
+
+      <div class="section-title">ข้อความรายงาน</div>
+      <div class="report-box">
+        <textarea id="reportText" class="report-text" readonly></textarea>
+        <button class="copy-button" id="copyReportBtn" type="button">คัดลอกข้อความรายงาน</button>
+        <div class="copy-status" id="copyStatus">ระบบจะสรุปข้อความให้อัตโนมัติ</div>
+      </div>
+    </section>
+
+    <section class="preview-wrap">
+      <div class="preview-toolbar"><strong>ตัวอย่างภาพที่จะบันทึก</strong><span id="previewModeText">ทั้ง 2 จุด • ล่าสุดอยู่บนสุด • ย้อนหลัง 8 ชั่วโมง</span></div>
+      <div class="canvas-shell"><canvas id="dashboard" width="1200" height="1500"></canvas></div>
+      <div class="hint">รูปพื้นหลังถูกฝังไว้ในไฟล์แล้ว สามารถเปิดใช้งานเป็นไฟล์ HTML ไฟล์เดียวได้</div>
+    </section>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+  const HISTORY_HOURS = 9;
+  const DISPLAY_HISTORY_HOURS = 8;
+  const FIXED_API_URL = 'https://ping-water.108khamwo.workers.dev';
+  const STORAGE_VERSION = 'V80TwoPointOriginalTableOnBackground';
+  const LOGICAL_W = 1200;
+  const LOGICAL_H = 1500;
+  const EMBEDDED_BACKGROUND_IMAGE = '../assets/background-two-point-table.jpg';
+
+  const stationDefs = {
+    p67: { code:'P.67', apiCodes:['P.67'], defaultName:'P.67 บ้านแม่แต สันทราย', defaultLatest:2.35, defaultHistory:[2.21,2.22,2.23,2.25,2.27,2.28,2.30,2.32,2.34], accent:'#24c9ff', accent2:'#057ee8' },
+    p1:  { code:'P.1',  apiCodes:['P.1'],  defaultName:'P.1 สะพานนวรัฐ', defaultLatest:2.80, defaultHistory:[2.54,2.58,2.61,2.65,2.69,2.72,2.75,2.77,2.79], accent:'#ffb31a', accent2:'#ff6b00' }
+  };
+  const C = { green:'#29c95b', yellow:'#ffc400', red:'#ff2a36', white:'#fff', text:'#102b55' };
+
+  const canvas = document.getElementById('dashboard');
+  const ctx = canvas.getContext('2d');
+  const autoEl = {
+    fetchBtn:document.getElementById('fetchBtn'), saveBtn:document.getElementById('saveBtn'), fetchStatus:document.getElementById('fetchStatus'),
+    reportText:document.getElementById('reportText'), copyReportBtn:document.getElementById('copyReportBtn'), copyStatus:document.getElementById('copyStatus'),
+    previewModeText:document.getElementById('previewModeText')
+  };
+  const manualEl = Object.fromEntries(['p67','p1'].map(key => [key, {
+    box:document.getElementById(`${key}ManualPrompt`), title:document.getElementById(`${key}ManualTitle`), text:document.getElementById(`${key}ManualText`),
+    label:document.getElementById(`${key}ManualLabel`), value:document.getElementById(`${key}ManualValue`), submit:document.getElementById(`${key}ManualSubmit`)
+  }]));
+  const pendingManual = {p67:null,p1:null};
+  let hasRequestedLatestDataThisSession = false;
+  let backgroundImagePromise = null;
+  let previewToken = 0;
+
+  function createHistoryInputs(key) {
+    const host = document.getElementById(`${key}HistoryFields`);
+    const values = stationDefs[key].defaultHistory;
+    host.innerHTML = Array.from({length:HISTORY_HOURS}, (_,index) => {
+      const hour = HISTORY_HOURS-index;
+      return `<div class="field"><label for="${key}_h${hour}">${hour} ชม.ที่แล้ว</label><input id="${key}_h${hour}" type="number" step="0.01" value="${values[index].toFixed(2)}"></div>`;
+    }).join('');
+  }
+  createHistoryInputs('p67'); createHistoryInputs('p1');
+
+  const sharedIds = ['displayMode','orderMode','p67_normalMax','p67_criticalMin','p1_normalMax','p1_criticalMin','size'];
+  const stationFieldIds = key => [`${key}_name`,`${key}_latest`,`${key}_change`,`${key}_date`,`${key}_time`,...Array.from({length:HISTORY_HOURS},(_,i)=>`${key}_h${HISTORY_HOURS-i}`)];
+  const allIds = [...sharedIds,...stationFieldIds('p67'),...stationFieldIds('p1')];
+  const el = Object.fromEntries(allIds.map(id => [id,document.getElementById(id)]));
+
+  const num = (value,fallback=0) => Number.isFinite(parseFloat(value)) ? parseFloat(value) : fallback;
+  const escapeHtml = value => String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  const normalizeStationCode = value => String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(_){return false;}}
+
+  function selectedStationKeys() { const mode=el.displayMode.value||'both'; return mode==='both'?['p67','p1']:[mode]; }
+  function currentOrderMode() { return el.orderMode.value||'latestTop'; }
+
+  function formatThaiDate(value) {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value||'';
+    const months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()+543}`;
+  }
+  function formatThaiDateTwoDigitYear(value) {
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value || '';
+    const months=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    const buddhistYear = date.getFullYear() + 543;
+    return `${date.getDate()} ${months[date.getMonth()]} ${String(buddhistYear).slice(-2)}`;
+  }
+  function formatShortDate(value) {
+    const date=new Date(`${value}T00:00:00`); if(Number.isNaN(date.getTime())) return '';
+    return `${String(date.getDate()).padStart(2,'0')}/${String(date.getMonth()+1).padStart(2,'0')}`;
+  }
+  function formatDotTime(value) {
+    const parts=String(value||'').replace(' น.','').trim().split(/[\:\.]/);
+    return `${String(Number(parts[0]||0)).padStart(2,'0')}.${String(parts[1]||'00').padStart(2,'0')}`;
+  }
+  function shiftDateTime(dateText,timeText,deltaHours) {
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dateText||'')||!/^\d{2}:\d{2}$/.test(timeText||'')) return {date:dateText||'',time:timeText||'00:00'};
+    const stamp=Date.parse(`${dateText}T${timeText}:00+07:00`)+deltaHours*3600000;
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(stamp));
+    const get=type=>parts.find(p=>p.type===type)?.value||'';
+    return {date:`${get('year')}-${get('month')}-${get('day')}`,time:`${get('hour')}:${get('minute')}`};
+  }
+  function getBangkokCurrentHour() {
+    const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+    const get=type=>parts.find(p=>p.type===type)?.value||'';
+    return {date:`${get('year')}-${get('month')}-${get('day')}`,time:`${get('hour')}:00`};
+  }
+  function timeKey(dateText,timeText,offsetHours=0) { const shifted=shiftDateTime(dateText,timeText,offsetHours); return shifted.date&&shifted.time?`${shifted.date}T${shifted.time}`:''; }
+
+  function saveState() {
+    try { const state={}; allIds.forEach(id=>state[id]=el[id].value); localStorage.setItem(`pingWaterDashboard${STORAGE_VERSION}`,JSON.stringify(state)); } catch(_){}
+  }
+  function loadState() {
+    try { const state=JSON.parse(localStorage.getItem(`pingWaterDashboard${STORAGE_VERSION}`)||'null'); if(!state||typeof state!=='object') return;
+      allIds.forEach(id=>{ if(id in state&&state[id]!=='') el[id].value=state[id]; });
+    } catch(_){}
+  }
+  function validLevelPoint(point) {
+    return point&&Number.isFinite(Number(point.level))&&Number(point.level)>=-2&&Number(point.level)<=10&&/^\d{4}-\d{2}-\d{2}$/.test(point.date||'')&&/^\d{2}:\d{2}$/.test(point.time||'');
+  }
+  function cacheKey(key) { return `pingWaterHistory${STORAGE_VERSION}_${key}`; }
+  function cacheSuccessfulHistory(key,data) {
+    try {
+      const old=JSON.parse(localStorage.getItem(cacheKey(key))||'null');
+      const oldPoints=Array.isArray(old?.points)?old.points.filter(validLevelPoint):[];
+      const incoming=Array.isArray(data.levels)?data.levels.filter(validLevelPoint):[];
+      if(Number.isFinite(Number(data.latest))&&validLevelPoint({date:data.date,time:data.time,level:data.latest})) incoming.push({date:data.date,time:data.time,level:Number(data.latest)});
+      const merged=new Map(); [...oldPoints,...incoming].forEach(p=>merged.set(`${p.date}T${p.time}`,{date:p.date,time:p.time,level:Number(p.level)}));
+      const points=[...merged.values()].sort((a,b)=>`${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)).slice(-240);
+      localStorage.setItem(cacheKey(key),JSON.stringify({saved_at:new Date().toISOString(),source:data.source||data.source_key||'',points}));
+      return points;
+    } catch(_){ return []; }
+  }
+  function cachedPoints(key) {
+    try { const cache=JSON.parse(localStorage.getItem(cacheKey(key))||'null'); return Array.isArray(cache?.points)?cache.points.filter(validLevelPoint):[]; } catch(_){ return []; }
+  }
+  function extractRemoteAnchor(data) {
+    const points=Array.isArray(data.levels)?data.levels.filter(validLevelPoint).sort((a,b)=>`${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)):[];
+    const latest=points[points.length-1]||null;
+    return {date:/^\d{4}-\d{2}-\d{2}$/.test(data.date||'')?data.date:latest?.date,time:/^\d{2}:\d{2}$/.test(data.time||'')?data.time:latest?.time};
+  }
+  function manualCompletionKey(key) { return `pingWaterManualCompletion${STORAGE_VERSION}_${key}`; }
+  function stalePromptKey(sourceDate,sourceTime,targetDate,targetTime) { return `${sourceDate}T${sourceTime}->${targetDate}T${targetTime}`; }
+  function getManualCompletion(key,promptKey) {
+    try { const value=JSON.parse(localStorage.getItem(manualCompletionKey(key))||'null'); return value&&value.key===promptKey?value:null; } catch(_){ return null; }
+  }
+  function stationSnapshot(key) { const snap={}; stationFieldIds(key).forEach(id=>snap[id]=el[id].value); return snap; }
+  function restoreStationSnapshot(key,completion) {
+    const snapshot=completion?.snapshot; if(!snapshot||typeof snapshot!=='object') return false;
+    stationFieldIds(key).forEach(id=>{ if(snapshot[id]!==undefined&&snapshot[id]!==null&&snapshot[id]!=='') el[id].value=snapshot[id]; });
+    return true;
+  }
+
+  function hideManualPrompt(key) { pendingManual[key]=null; manualEl[key].box.hidden=true; manualEl[key].value.value=''; }
+  function showManualPrompt(key,sourceDate,sourceTime,targetDate,targetTime) {
+    const promptKey=stalePromptKey(sourceDate,sourceTime,targetDate,targetTime);
+    pendingManual[key]={key:promptKey,sourceDate,sourceTime,targetDate,targetTime};
+    manualEl[key].box.hidden=false;
+    manualEl[key].title.textContent=`ข้อมูล ${stationDefs[key].code} ยังไม่ถึงเวลาปัจจุบัน`;
+    manualEl[key].text.textContent=`ข้อมูลล่าสุดอยู่ที่ ${formatThaiDate(sourceDate)} เวลา ${formatDotTime(sourceTime)} น. แต่เวลาปัจจุบันคือ ${formatThaiDate(targetDate)} เวลา ${formatDotTime(targetTime)} น.`;
+    manualEl[key].label.textContent=`ระดับน้ำ ${stationDefs[key].code} เวลา ${formatDotTime(targetTime)} น. (เมตร)`;
+  }
+  function buildKnownPointMap(key,sourceDate,sourceTime) {
+    const map=new Map(); map.set(`${sourceDate}T${sourceTime}`,Number(el[`${key}_latest`].value));
+    for(let hour=1;hour<=HISTORY_HOURS;hour++) {
+      const k=timeKey(sourceDate,sourceTime,-hour); const value=Number(el[`${key}_h${hour}`].value); if(k&&Number.isFinite(value)) map.set(k,value);
+    }
+    cachedPoints(key).forEach(p=>map.set(`${p.date}T${p.time}`,Number(p.level)));
+    return map;
+  }
+  function nearestKnownAtOrBefore(map,key) { const keys=[...map.keys()].filter(k=>k<=key).sort(); return keys.length?map.get(keys[keys.length-1]):null; }
+
+  async function submitManualCurrentValue(key) {
+    const context=pendingManual[key]; if(!context) return;
+    if(getManualCompletion(key,context.key)) { hideManualPrompt(key); setFetchStatus('success',`กรอก ${stationDefs[key].code} เวลานี้แล้ว`,'ระบบป้องกันการเลื่อนข้อมูลซ้ำจากการกดหลายครั้ง'); return; }
+    const entered=Number(manualEl[key].value.value);
+    if(!Number.isFinite(entered)||entered<0) { setFetchStatus('error','ค่าระดับน้ำไม่ถูกต้อง',`กรุณากรอกตัวเลขของ ${stationDefs[key].code} เช่น 2.35`); manualEl[key].value.focus(); return; }
+    const pointMap=buildKnownPointMap(key,context.sourceDate,context.sourceTime); pointMap.set(`${context.targetDate}T${context.targetTime}`,entered);
+    let fallbackCount=0;
+    for(let hour=1;hour<=HISTORY_HOURS;hour++) {
+      const wanted=timeKey(context.targetDate,context.targetTime,-hour); let value=pointMap.get(wanted);
+      if(!Number.isFinite(value)) { value=nearestKnownAtOrBefore(pointMap,wanted); if(Number.isFinite(value)) fallbackCount++; }
+      if(Number.isFinite(value)) el[`${key}_h${hour}`].value=Number(value).toFixed(2);
+    }
+    el[`${key}_latest`].value=entered.toFixed(2); el[`${key}_date`].value=context.targetDate; el[`${key}_time`].value=context.targetTime;
+    const previous=Number(el[`${key}_h1`].value); el[`${key}_change`].value=Number.isFinite(previous)?String(Math.round((entered-previous)*100)):'0';
+    safeStorageSet(manualCompletionKey(key),JSON.stringify({key:context.key,snapshot:stationSnapshot(key),savedAt:new Date().toISOString()}));
+    saveState(); hideManualPrompt(key); await updatePreview();
+    setFetchStatus('success',`บันทึกข้อมูลปัจจุบัน ${stationDefs[key].code} แล้ว`,fallbackCount?`กรอกสำเร็จหนึ่งครั้ง • ใช้ค่าล่าสุดที่มีแทนช่วงที่ขาด ${fallbackCount} จุด`:'กรอกสำเร็จหนึ่งครั้ง และป้องกันการกดซ้ำแล้ว');
+  }
+
+  function apiUrl(code) {
+    const url=new URL(FIXED_API_URL); url.searchParams.set('station',code); url.searchParams.set('source','auto'); url.searchParams.set('history_hours',String(HISTORY_HOURS));
+    url.searchParams.set('allow_stale','0'); url.searchParams.set('max_age','180'); url.searchParams.set('_t',Date.now().toString()); return url;
+  }
+  function applyRemoteData(key,data) {
+    const remote=Array.isArray(data.levels)?data.levels.filter(validLevelPoint):[];
+    const anchor=extractRemoteAnchor(data); const latestRemote=remote.sort((a,b)=>`${a.date}T${a.time}`.localeCompare(`${b.date}T${b.time}`)).slice(-1)[0];
+    const latestLevel=Number.isFinite(Number(data.latest))?Number(data.latest):Number(latestRemote?.level);
+    if(!anchor.date||!anchor.time||!Number.isFinite(latestLevel)) throw new Error('ข้อมูลที่ได้รับไม่มีวันเวลา หรือค่าระดับน้ำล่าสุดที่ถูกต้อง');
+    const merged=new Map(); [...cachedPoints(key),...remote,{date:anchor.date,time:anchor.time,level:latestLevel}].filter(validLevelPoint).forEach(p=>merged.set(`${p.date}T${p.time}`,p));
+    el[`${key}_latest`].value=latestLevel.toFixed(2); el[`${key}_date`].value=anchor.date; el[`${key}_time`].value=anchor.time; el[`${key}_name`].value=stationDefs[key].defaultName;
+    const previous=merged.get(timeKey(anchor.date,anchor.time,-1));
+    el[`${key}_change`].value=Number.isFinite(Number(data.change_cm))?String(Math.round(Number(data.change_cm))):(previous?String(Math.round((latestLevel-Number(previous.level))*100)):'0');
+    const missing=[];
+    for(let hour=1;hour<=HISTORY_HOURS;hour++) {
+      const point=merged.get(timeKey(anchor.date,anchor.time,-hour));
+      if(point&&Number.isFinite(Number(point.level))) el[`${key}_h${hour}`].value=Number(point.level).toFixed(2); else missing.push(hour);
+    }
+    saveState(); return {anchor,missing};
+  }
+  function restoreCachedHistoryOnly(key) {
+    const points=cachedPoints(key); if(!points.length) return 0;
+    const map=new Map(points.map(p=>[`${p.date}T${p.time}`,p])); let count=0;
+    const date=el[`${key}_date`].value,time=el[`${key}_time`].value;
+    for(let hour=1;hour<=HISTORY_HOURS;hour++) { const p=map.get(timeKey(date,time,-hour)); if(p){ el[`${key}_h${hour}`].value=Number(p.level).toFixed(2); count++; } }
+    if(count===0) {
+      const last=points.slice(-HISTORY_HOURS); last.forEach((p,index)=>{ const hour=HISTORY_HOURS-index; el[`${key}_h${hour}`].value=Number(p.level).toFixed(2); count++; });
+    }
+    return count;
+  }
+
+  async function fetchStation(key) {
+    const def=stationDefs[key]; const errors=[];
+    for(const code of def.apiCodes) {
+      const controller=new AbortController(); const timeout=setTimeout(()=>controller.abort(),35000);
+      try {
+        const response=await fetch(apiUrl(code).toString(),{cache:'no-store',signal:controller.signal});
+        let data; try{data=await response.json();}catch(_){throw new Error(`ระบบตัวกลางตอบกลับไม่ใช่ JSON (HTTP ${response.status})`);}
+        if(!response.ok||!data.ok) throw new Error(data.error||`HTTP ${response.status}`);
+        const returned=normalizeStationCode(data.station||data.station_code||data.code||''); const expected=normalizeStationCode(def.code);
+        if(returned&&returned!==expected) throw new Error(`ต้นทางส่งข้อมูล ${data.station||data.station_code||data.code} แทน ${def.code}`);
+        cacheSuccessfulHistory(key,data);
+        const anchor=extractRemoteAnchor(data); if(!anchor.date||!anchor.time) throw new Error('ข้อมูลที่ได้รับไม่มีวันเวลา');
+        const target=getBangkokCurrentHour(); const isStale=`${anchor.date}T${anchor.time}`<`${target.date}T${target.time}`;
+        const promptKey=stalePromptKey(anchor.date,anchor.time,target.date,target.time); const completion=getManualCompletion(key,promptKey);
+        let applied;
+        if(isStale&&completion) { restoreStationSnapshot(key,completion); hideManualPrompt(key); applied={anchor:{date:el[`${key}_date`].value,time:el[`${key}_time`].value},missing:[]}; }
+        else {
+          applied=applyRemoteData(key,data);
+          if(isStale) showManualPrompt(key,anchor.date,anchor.time,target.date,target.time); else hideManualPrompt(key);
+        }
+        safeStorageSet(`pingWaterLastPayload${STORAGE_VERSION}_${key}`,JSON.stringify(data));
+        return {key,ok:true,isStale,usedCompletion:Boolean(isStale&&completion),source:data.source||data.source_key||'แหล่งข้อมูลต้นทาง',anchor,missing:applied.missing};
+      } catch(error) { errors.push(error.name==='AbortError'?'หมดเวลารอข้อมูล':error.message); }
+      finally { clearTimeout(timeout); }
+    }
+    const restored=restoreCachedHistoryOnly(key);
+    const target=getBangkokCurrentHour(); const date=el[`${key}_date`].value,time=el[`${key}_time`].value;
+    if(date&&time&&`${date}T${time}`<`${target.date}T${target.time}`) {
+      const pKey=stalePromptKey(date,time,target.date,target.time); const completion=getManualCompletion(key,pKey);
+      if(completion) { restoreStationSnapshot(key,completion); hideManualPrompt(key); } else showManualPrompt(key,date,time,target.date,target.time);
+    }
+    return {key,ok:false,error:errors.join(' | ')||'ไม่พบข้อมูลจากต้นทาง',restored};
+  }
+
+  function setFetchStatus(type,title,detail='') { autoEl.fetchStatus.className=`fetch-status ${type||''}`.trim(); autoEl.fetchStatus.innerHTML=`<span class="dot"></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span></div>`; }
+  async function fetchLatestData() {
+    hasRequestedLatestDataThisSession=true; autoEl.fetchBtn.disabled=true; autoEl.saveBtn.disabled=true;
+    hideManualPrompt('p67'); hideManualPrompt('p1');
+    const keys=selectedStationKeys(); setFetchStatus('loading','กำลังดึงข้อมูล…',`กำลังตรวจสอบ ${keys.map(k=>stationDefs[k].code).join(' และ ')} พร้อมข้อมูลย้อนหลัง 9 ชั่วโมง`);
+    const results=await Promise.all(keys.map(fetchStation)); const ok=results.filter(r=>r.ok),failed=results.filter(r=>!r.ok);
+    saveState(); await updatePreview();
+    if(!failed.length) {
+      const stale=ok.filter(r=>r.isStale&&!r.usedCompletion); const completed=ok.filter(r=>r.usedCompletion);
+      if(stale.length) setFetchStatus('warning','ข้อมูลบางจุดยังไม่ถึงเวลาปัจจุบัน',stale.map(r=>`${stationDefs[r.key].code} ล่าสุด ${formatThaiDate(r.anchor.date)} ${formatDotTime(r.anchor.time)} น. • กรุณากรอกค่าปัจจุบันเพียงครั้งเดียว`).join(' • '));
+      else if(completed.length) setFetchStatus('success','ใช้ข้อมูลที่กรอกไว้แล้ว',completed.map(r=>`${stationDefs[r.key].code} ป้องกันการเลื่อนข้อมูลซ้ำแล้ว`).join(' • '));
+      else {
+        const missing=ok.flatMap(r=>r.missing.map(h=>`${stationDefs[r.key].code} ${h} ชม.`));
+        setFetchStatus(missing.length?'warning':'success','อัปเดตข้อมูลสำเร็จ',`${ok.map(r=>`${stationDefs[r.key].code} ${formatThaiDate(r.anchor.date)} ${formatDotTime(r.anchor.time)} น.`).join(' • ')}${missing.length?` • ยังขาด ${missing.join(', ')}`:''}`);
+      }
+    } else if(ok.length) setFetchStatus('warning','อัปเดตได้บางจุด',results.map(r=>r.ok?`${stationDefs[r.key].code} สำเร็จ`:`${stationDefs[r.key].code} ไม่สำเร็จ${r.restored?` ใช้ข้อมูลจำไว้ ${r.restored} ค่า`:''}: ${r.error}`).join(' • '));
+    else setFetchStatus('error','ดึงข้อมูลไม่สำเร็จ',failed.map(r=>`${stationDefs[r.key].code}: ${r.error}${r.restored?` • ใช้ข้อมูลที่จำไว้ ${r.restored} ค่า`:''}`).join(' • '));
+    autoEl.fetchBtn.disabled=false; autoEl.saveBtn.disabled=false;
+  }
+
+  function stationThresholds(key) { return key==='p67'?{normal:num(el.p67_normalMax.value,2.20),bank:num(el.p67_criticalMin.value,3.00)}:{normal:num(el.p1_normalMax.value,3.00),bank:num(el.p1_criticalMin.value,3.70)}; }
+  function statusFor(level,normalMax,bankLevel) { if(level>=bankLevel)return{label:'ถึง/เกินตลิ่ง',key:'red',color:C.red}; if(level>=normalMax)return{label:'เฝ้าระวัง',key:'yellow',color:C.yellow}; return{label:'ปกติ',key:'green',color:C.green}; }
+  function statusPalette(key) { if(key==='red')return{a:'#d9082b',b:'#ff3444',text:'#fff'}; if(key==='yellow')return{a:'#e89f00',b:'#ffd21a',text:'#fff'}; return{a:'#079c46',b:'#24d267',text:'#fff'}; }
+  function trendInfo(current,older) { if(!Number.isFinite(current)||!Number.isFinite(older))return{arrow:'•',deltaCm:null,color:'#dcecff'}; const delta=Math.round((current-older)*100); if(delta>0)return{arrow:'↑',deltaCm:delta,color:'#ff0000'}; if(delta<0)return{arrow:'↓',deltaCm:delta,color:'#49e77c'}; return{arrow:'→',deltaCm:0,color:'#ffd25c'}; }
+
+  function stationEntries(key) {
+    const date=el[`${key}_date`].value,time=el[`${key}_time`].value;
+    const entries=[{hourAgo:0,date,time,value:num(el[`${key}_latest`].value),isLatest:true}];
+    for(let hour=1;hour<=HISTORY_HOURS;hour++){const shifted=shiftDateTime(date,time,-hour);entries.push({hourAgo:hour,date:shifted.date,time:shifted.time,value:num(el[`${key}_h${hour}`].value),isLatest:false});}
+    return entries;
+  }
+  function orderedEntries(key) { const entries=stationEntries(key).filter(e=>e.hourAgo<=DISPLAY_HISTORY_HOURS); return currentOrderMode()==='latestBottom'?[...entries].reverse():entries; }
+
+  function roundedRect(context, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    context.beginPath();
+    context.moveTo(x + rr, y);
+    context.arcTo(x + w, y, x + w, y + h, rr);
+    context.arcTo(x + w, y + h, x, y + h, rr);
+    context.arcTo(x, y + h, x, y, rr);
+    context.arcTo(x, y, x + w, y, rr);
+    context.closePath();
+  }
+
+  function panel(context, x, y, w, h, r = 24, fill = '#ffffff', stroke = '#c7d9ee', shadow = true, lineWidth = 2) {
+    context.save();
+    if (shadow) {
+      context.shadowColor = 'rgba(5,38,82,.16)';
+      context.shadowBlur = 18;
+      context.shadowOffsetY = 5;
+    }
+    roundedRect(context, x, y, w, h, r);
+    context.fillStyle = fill;
+    context.fill();
+    context.shadowColor = 'transparent';
+    if (stroke) {
+      context.lineWidth = lineWidth;
+      context.strokeStyle = stroke;
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  function textDraw(context, value, x, y, size, weight = 400, color = '#102b55', align = 'left', baseline = 'alphabetic', shadow = true) {
+    context.save();
+    context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
+    context.fillStyle = color;
+    context.textAlign = align;
+    context.textBaseline = baseline;
+    if (shadow) {
+      context.shadowColor = 'rgba(0,0,0,.28)';
+      context.shadowBlur = Math.max(2, size * 0.08);
+      context.shadowOffsetY = Math.max(1, size * 0.025);
+    }
+    context.fillText(String(value), x, y);
+    context.restore();
+  }
+
+  function textSpaced(context, value, x, y, size, weight = 400, color = '#102b55', spacing = 0, align = 'left', baseline = 'alphabetic', shadow = true) {
+    const chars = String(value).split('');
+    context.save();
+    context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
+    context.fillStyle = color;
+    context.textBaseline = baseline;
+    if (shadow) {
+      context.shadowColor = 'rgba(0,0,0,.28)';
+      context.shadowBlur = Math.max(2, size * 0.08);
+      context.shadowOffsetY = Math.max(1, size * 0.025);
+    }
+    const widths = chars.map(ch => context.measureText(ch).width);
+    const totalWidth = widths.reduce((sum, width) => sum + width, 0) + spacing * Math.max(0, chars.length - 1);
+    let cursorX = x;
+    if (align === 'center') cursorX = x - totalWidth / 2;
+    else if (align === 'right') cursorX = x - totalWidth;
+    chars.forEach((ch, index) => {
+      context.fillText(ch, cursorX, y);
+      cursorX += widths[index] + spacing;
+    });
+    context.restore();
+  }
+
+  function textDrawCustomShadow(context, value, x, y, size, weight = 400, color = '#102b55', align = 'left', baseline = 'alphabetic', shadowColor = 'rgba(0,0,0,.38)', shadowBlur = null, shadowOffsetX = 0, shadowOffsetY = null) {
+    context.save();
+    context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
+    context.fillStyle = color;
+    context.textAlign = align;
+    context.textBaseline = baseline;
+    context.shadowColor = shadowColor;
+    context.shadowBlur = shadowBlur ?? Math.max(2, size * 0.06);
+    context.shadowOffsetX = shadowOffsetX;
+    context.shadowOffsetY = shadowOffsetY ?? Math.max(1, size * 0.02);
+    context.fillText(String(value), x, y);
+    context.restore();
+  }
+
+  function textSpacedCustomShadow(context, value, x, y, size, weight = 400, color = '#102b55', spacing = 0, align = 'left', baseline = 'alphabetic', shadowColor = 'rgba(0,0,0,.38)', shadowBlur = null, shadowOffsetX = 0, shadowOffsetY = null) {
+    const chars = String(value).split('');
+    context.save();
+    context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
+    context.fillStyle = color;
+    context.textBaseline = baseline;
+    context.shadowColor = shadowColor;
+    context.shadowBlur = shadowBlur ?? Math.max(2, size * 0.06);
+    context.shadowOffsetX = shadowOffsetX;
+    context.shadowOffsetY = shadowOffsetY ?? Math.max(1, size * 0.02);
+    const widths = chars.map(ch => context.measureText(ch).width);
+    const totalWidth = widths.reduce((sum, width) => sum + width, 0) + spacing * Math.max(0, chars.length - 1);
+    let cursorX = x;
+    if (align === 'center') cursorX = x - totalWidth / 2;
+    else if (align === 'right') cursorX = x - totalWidth;
+    chars.forEach((ch, index) => {
+      context.fillText(ch, cursorX, y);
+      cursorX += widths[index] + spacing;
+    });
+    context.restore();
+  }
+
+  function fitText(context, value, x, y, maxW, maxSize, minSize, weight, color, align = 'left', baseline = 'alphabetic') {
+    let size = maxSize;
+    context.save();
+    while (size > minSize) {
+      context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
+      if (context.measureText(String(value)).width <= maxW) break;
+      size -= 1;
+    }
+    context.restore();
+    textDraw(context, value, x, y, size, weight, color, align, baseline);
+  }
+
+  // รูปแบบการวาดตารางส่วนนี้ยกมาจากไฟล์ "รายงานระดับน้ำปิง ตาราง.html"
+  // โดยคงขนาดตัวอักษร ระยะห่าง สี และสัดส่วนเดิมของตาราง
+  function drawLevelPill(context, x, y, w, h, status, entry, isSingle) {
+    const palette = statusPalette(status.key);
+    const gradient = context.createLinearGradient(x, y, x + w, y + h);
+    gradient.addColorStop(0, palette.a);
+    gradient.addColorStop(1, palette.b);
+    panel(context, x, y, w, h, h / 2, gradient, 'rgba(255,255,255,.16)', false, 1.2);
+
+    const levelSize = entry.isLatest ? (isSingle ? 68 : 57) : (isSingle ? 54 : 46);
+    const unitSize = entry.isLatest ? (isSingle ? 27 : 22) : (isSingle ? 24 : 20);
+    const centerY = y + h / 2;
+    const unitX = x + w - (isSingle ? 15 : 12);
+    const valueAreaW = w - (entry.isLatest ? (isSingle ? 78 : 64) : (isSingle ? 66 : 54));
+    const valueX = x + valueAreaW / 2 + (isSingle ? 4 : 2);
+    const numberSpacing = entry.isLatest ? (isSingle ? 1.8 : 1.3) : (isSingle ? 1.4 : 1.0);
+    const warningPill = status.key === 'yellow';
+    const pillTextShadow = !warningPill;
+    const numberY = centerY + (entry.isLatest ? 1 : 0);
+    const unitY = centerY;
+
+    if (warningPill) {
+      textSpacedCustomShadow(context, entry.value.toFixed(2), valueX, numberY, levelSize, 800, palette.text, numberSpacing, 'center', 'middle', 'rgba(0,0,0,.55)', Math.max(2, levelSize * 0.05), 0, 1);
+      textDrawCustomShadow(context, 'เมตร', unitX, unitY, unitSize, 700, palette.text, 'right', 'middle', 'rgba(0,0,0,.55)', Math.max(2, unitSize * 0.055), 0, 1);
+    } else {
+      textSpaced(context, entry.value.toFixed(2), valueX, numberY, levelSize, 800, palette.text, numberSpacing, 'center', 'middle', pillTextShadow);
+      textDraw(context, 'เมตร', unitX, unitY, unitSize, 700, palette.text, 'right', 'middle', pillTextShadow);
+    }
+  }
+
+  function drawChangeBadge(context, x, y, w, h, trend, isLatest, isSingle) {
+    if (trend.deltaCm === null) return;
+    const amountText = trend.deltaCm > 0 ? `+${trend.deltaCm}` : `${trend.deltaCm}`;
+    const size = isLatest ? (isSingle ? 44 : 36) : (isSingle ? 41 : 33);
+    textDraw(context, `${trend.arrow} ${amountText} ซม.`, x + w / 2, y + h / 2, size, 800, trend.color, 'center', 'middle');
+  }
+
+  function drawStationColumn(context, key, x, y, w, h) {
+    const def = stationDefs[key];
+    const thresholds = stationThresholds(key);
+    const baseEntries = stationEntries(key);
+    const entries = orderedEntries(key);
+    const byHourAgo = Object.fromEntries(baseEntries.map(entry => [entry.hourAgo, entry]));
+    const isSingle = w > 750;
+
+    const outerGradient = context.createLinearGradient(x, y, x + w, y + h);
+    outerGradient.addColorStop(0, '#091523');
+    outerGradient.addColorStop(.55, '#0b1420');
+    outerGradient.addColorStop(1, '#060c13');
+    panel(context, x, y, w, h, 26, outerGradient, def.accent, true, 2.2);
+
+    const headH = isSingle ? 108 : 98;
+    const headGradient = context.createLinearGradient(x, y, x + w, y + headH);
+    headGradient.addColorStop(0, def.accent2);
+    headGradient.addColorStop(1, def.accent);
+    context.save();
+    roundedRect(context, x + 2, y + 2, w - 4, headH, 23);
+    context.clip();
+    context.fillStyle = headGradient;
+    context.fillRect(x + 2, y + 2, w - 4, headH);
+    context.restore();
+
+    const codeSize = isSingle ? 41 : 31;
+    const nameSize = isSingle ? 46 : 46;
+    textDraw(context, def.code, x + 22, y + 36, codeSize, 800, '#ffffff', 'left', 'middle');
+    fitText(context, el[`${key}_name`].value.replace(`${def.code} `, ''), x + 22, y + 74, w * .58, nameSize, isSingle ? 37 : 39, 700, '#ffffff', 'left', 'middle');
+
+    const bankBadgeW = isSingle ? 282 : 192;
+    const bankBadgeH = isSingle ? 48 : 60;
+    const bankBadgeX = x + w - bankBadgeW - 18;
+    const bankBadgeY = y + (headH - bankBadgeH) / 2;
+    panel(context, bankBadgeX, bankBadgeY, bankBadgeW, bankBadgeH, 14, 'rgba(24,39,58,.52)', 'rgba(255,255,255,.44)', false, 1.4);
+    if (isSingle) {
+      fitText(context, `ระดับตลิ่ง ${thresholds.bank.toFixed(2)} เมตร`, bankBadgeX + bankBadgeW / 2, bankBadgeY + bankBadgeH / 2 + 1, bankBadgeW - 26, 25, 20, 600, '#ffffff', 'center', 'middle');
+    } else {
+      fitText(context, 'ระดับตลิ่ง', bankBadgeX + bankBadgeW / 2, bankBadgeY + 19, bankBadgeW - 24, 22, 19, 700, '#ffffff', 'center', 'middle');
+      fitText(context, `${thresholds.bank.toFixed(2)} เมตร`, bankBadgeX + bankBadgeW / 2, bankBadgeY + 42, bankBadgeW - 24, 22, 19, 700, '#ffffff', 'center', 'middle');
+    }
+
+    const innerX = x + (isSingle ? 22 : 16);
+    const innerW = w - (isSingle ? 44 : 32);
+    const listTop = y + headH + 11;
+    const bottomPad = 14;
+    const gap = isSingle ? 3 : 2;
+    const latestH = isSingle ? 136 : 122;
+    const historyCount = entries.filter(entry => !entry.isLatest).length;
+    const standardH = historyCount > 0
+      ? (h - headH - 11 - bottomPad - latestH - gap * historyCount) / historyCount
+      : 0;
+
+    let cursorY = listTop;
+    entries.forEach((entry, index) => {
+      const rowH = entry.isLatest ? latestH : standardH;
+      const rowY = cursorY;
+      cursorY += rowH + gap;
+      const status = statusFor(entry.value, thresholds.normal, thresholds.bank);
+      const olderEntry = byHourAgo[entry.hourAgo + 1] || null;
+      const trend = trendInfo(entry.value, olderEntry?.value);
+
+      if (entry.isLatest) {
+        panel(context, innerX, rowY, innerW, rowH, 18, 'rgba(255,255,255,.075)', status.color, false, 2.2);
+      } else {
+        const fill = index % 2 === 0 ? 'rgba(255,255,255,.026)' : 'rgba(255,255,255,.045)';
+        panel(context, innerX, rowY, innerW, rowH, 10, fill, null, false, 0);
+        context.save();
+        context.strokeStyle = 'rgba(157,181,207,.13)';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(innerX + 10, rowY + rowH);
+        context.lineTo(innerX + innerW - 10, rowY + rowH);
+        context.stroke();
+        context.restore();
+      }
+
+      const timeBlockW = entry.isLatest ? (isSingle ? 238 : 138) : (isSingle ? 205 : 132);
+      const changeBlockW = entry.isLatest ? (isSingle ? 222 : 132) : (isSingle ? 148 : 92);
+      const gapX = entry.isLatest ? 14 : 8;
+      const leftX = innerX + 14;
+
+      if (entry.isLatest) {
+        textDraw(context, `${formatDotTime(entry.time)} น.`, leftX, rowY + rowH * .52, isSingle ? 54 : 44, 800, '#ffffff', 'left', 'middle');
+      } else {
+        textDraw(context, `${formatDotTime(entry.time)} น.`, leftX, rowY + rowH / 2, isSingle ? 42 : 35, 700, '#f4f8fc', 'left', 'middle');
+        if (entry.date !== baseEntries[0].date) {
+          textDraw(context, formatShortDate(entry.date), leftX + (isSingle ? 146 : 108), rowY + rowH / 2, isSingle ? 16 : 12, 500, '#8097ac', 'left', 'middle');
+        }
+      }
+
+      const changeOffsetX = entry.isLatest ? (isSingle ? 56 : 36) : (isSingle ? 96 : 42);
+      const changeX = innerX + timeBlockW + gapX + changeOffsetX;
+      const changeY = rowY + (entry.isLatest ? 9 : 4);
+      const changeH = rowH - (entry.isLatest ? 18 : 8);
+      const hasChange = trend.deltaCm !== null;
+      const availableLeft = hasChange ? innerX + timeBlockW + changeBlockW + gapX * 2 + changeOffsetX : innerX + timeBlockW + gapX + changeOffsetX;
+      const availableRight = innerX + innerW - 12;
+      const preferredPillW = entry.isLatest
+        ? (isSingle ? 340 : 324)
+        : (isSingle ? 264 : 184);
+      const pillW = Math.min(preferredPillW, availableRight - availableLeft);
+      const pillX = availableRight - pillW;
+      const pillOffsetY = entry.isLatest ? 28 : (isSingle ? 10 : 24);
+      const pillHeight = entry.isLatest ? rowH - 56 : (isSingle ? rowH - 20 : rowH - 48);
+
+      if (hasChange) {
+        drawChangeBadge(context, changeX, changeY, changeBlockW, changeH, trend, entry.isLatest, isSingle);
+      }
+      drawLevelPill(context, pillX, rowY + pillOffsetY, pillW, pillHeight, status, entry, isSingle);
+    });
+  }
+
+  function loadBackgroundImage(){if(!backgroundImagePromise){backgroundImagePromise=new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error('เปิดรูปพื้นหลังไม่สำเร็จ'));img.src=EMBEDDED_BACKGROUND_IMAGE;});}return backgroundImagePromise;}
+  let promptFontReadyPromise = null;
+  function ensurePromptFontReady() {
+    if (promptFontReadyPromise) return promptFontReadyPromise;
+    promptFontReadyPromise = (async () => {
+      if (!document.fonts?.load) return;
+      const sample = '6 สิงหาคม 69 ระดับน้ำปิง';
+      await Promise.all([
+        document.fonts.load('500 50px "Prompt"', sample),
+        document.fonts.load('600 50px "Prompt"', sample),
+        document.fonts.load('700 28px "Prompt"', sample)
+      ]);
+      if (document.fonts?.ready) await document.fonts.ready;
+      if (!document.fonts.check('500 50px "Prompt"', sample)) {
+        await new Promise(resolve => setTimeout(resolve, 350));
+        await document.fonts.load('500 50px "Prompt"', sample);
+      }
+    })();
+    return promptFontReadyPromise;
+  }
+
+  async function renderComposite(targetCanvas, exportWidth = 1200) {
+    await ensurePromptFontReady();
+    const background = await loadBackgroundImage();
+    const outW = exportWidth;
+    const outH = Math.round(exportWidth * LOGICAL_H / LOGICAL_W);
+    targetCanvas.width = outW;
+    targetCanvas.height = outH;
+
+    const context = targetCanvas.getContext('2d');
+    context.clearRect(0, 0, outW, outH);
+    context.drawImage(background, 0, 0, outW, outH);
+
+    const scale = outW / LOGICAL_W;
+    context.save();
+    context.scale(scale, scale);
+
+    const keys = selectedStationKeys();
+
+    // แสดงวันที่แบบข้อความด้านบน โดยไม่ใส่แถบเต็มความกว้าง
+    const latestDates = keys.map(key => el[`${key}_date`].value).filter(Boolean).sort();
+    const latestDate = latestDates.slice(-1)[0] || new Date().toISOString().slice(0, 10);
+    context.save();
+    context.font = `500 50px "Prompt"`;
+    context.fillStyle = '#ffffff';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.shadowColor = 'rgba(0,0,0,.92)';
+    context.shadowBlur = 7;
+    context.shadowOffsetX = 5;
+    context.shadowOffsetY = 6;
+    context.fillText(formatThaiDateTwoDigitYear(latestDate), 850, 214);
+    context.restore();
+
+    // ขยายตารางจากขนาดเดิมขึ้น 10% โดยคงสัดส่วนและจัดให้อยู่กึ่งกลางภาพ
+    const tableScale = 0.93743958;
+    const tableY = 285;
+    context.save();
+    context.translate((LOGICAL_W - 1200 * tableScale) / 2, tableY);
+    context.scale(tableScale, tableScale);
+    if (keys.length === 2) {
+      drawStationColumn(context, keys[0], 4, 0, 592, 1144);
+      drawStationColumn(context, keys[1], 604, 0, 592, 1144);
+    } else {
+      drawStationColumn(context, keys[0], 60, 0, 1080, 1024);
+    }
+    context.restore();
+
+    context.restore();
+  }
+
+  function reportStatusLabel(key){const t=stationThresholds(key);return statusFor(num(el[`${key}_latest`].value),t.normal,t.bank).label;}
+  function formatChangeCm(value){const n=Math.round(num(value,0));return n>0?`+${n} เซนติเมตร`:n<0?`${n} เซนติเมตร`:'0 เซนติเมตร';}
+  function buildReportText(){
+    const lines=['อัปเดต ‼ ระดับน้ำปิง 2 จุด'];
+    selectedStationKeys().forEach((key,index)=>{
+      const t=stationThresholds(key),entries=stationEntries(key).slice(1,DISPLAY_HISTORY_HOURS+1);
+      if(index===0)lines.push(`วันที่ ${formatThaiDate(el[`${key}_date`].value)} เวลา ${formatDotTime(el[`${key}_time`].value)} น.`);
+      lines.push('.',`จุด ${el[`${key}_name`].value}`,`ระดับน้ำล่าสุด : ${num(el[`${key}_latest`].value).toFixed(2)} เมตร`,`เปลี่ยนแปลง : ${formatChangeCm(el[`${key}_change`].value)}`,`ระดับตลิ่ง : ${t.bank.toFixed(2)} เมตร`,`สถานะ : ${reportStatusLabel(key)}`,'ระดับน้ำย้อนหลัง 8 ชั่วโมง',...entries.map(e=>`${formatDotTime(e.time)} น. : ${e.value.toFixed(2)} เมตร`));
+    });
+    return lines.join('\n');
+  }
+  function updateReportText(){autoEl.reportText.value=buildReportText();}
+  async function updatePreview(){const token=++previewToken;syncDisplayModeUI();updateReportText();const preview=document.createElement('canvas');await renderComposite(preview,1200);if(token!==previewToken)return;canvas.width=preview.width;canvas.height=preview.height;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(preview,0,0);}
+  function syncDisplayModeUI(){const keys=selectedStationKeys();document.querySelectorAll('.station-section[data-station]').forEach(section=>section.classList.toggle('is-hidden',!keys.includes(section.dataset.station)));const mode=keys.length===2?'ทั้ง 2 จุด':stationDefs[keys[0]].code;const order=currentOrderMode()==='latestBottom'?'ล่าสุดอยู่ล่างสุด':'ล่าสุดอยู่บนสุด';autoEl.previewModeText.textContent=`${mode} • ${order} • ย้อนหลัง 8 ชั่วโมง`;autoEl.fetchBtn.textContent=keys.length===2?'ดึงข้อมูลทั้ง 2 จุด':`ดึงข้อมูล ${stationDefs[keys[0]].code}`;}
+
+  function isIOSDevice(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
+  async function saveOrShareImage(){
+    if(!hasRequestedLatestDataThisSession){const action=isIOSDevice()?'แชร์รูป':'บันทึกรูป';alert(`ยังไม่ได้กดดึงข้อมูลล่าสุด\n\nกรุณากดปุ่ม “ดึงข้อมูล” ก่อน แล้วจึงกด${action}อีกครั้ง`);setFetchStatus('warning','ยังไม่ได้ดึงข้อมูลล่าสุด',`กรุณากด “ดึงข้อมูล” ก่อน${action}`);autoEl.fetchBtn.focus();return;}
+    autoEl.saveBtn.disabled=true;
+    try{const exportWidth=960;const out=document.createElement('canvas');await renderComposite(out,exportWidth);const keys=selectedStationKeys();const label=keys.length===2?'P67-P1':stationDefs[keys[0]].code.replace('.','');const date=el[`${keys[0]}_date`].value||'date',time=(el[`${keys[0]}_time`].value||'time').replace(':','-');const filename=`water-level-${label}_${date}_${time}.png`;
+      if(isIOSDevice()&&navigator.share){const blob=await new Promise(resolve=>out.toBlob(resolve,'image/png'));if(!blob)throw new Error('สร้างไฟล์รูปไม่สำเร็จ');const file=new File([blob],filename,{type:'image/png'});if(!navigator.canShare||navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'รายงานระดับน้ำปิง 2 จุด'});setFetchStatus('success','แชร์รูปแล้ว','เปิดเมนูแชร์ของ iOS เรียบร้อย');return;}}
+      const a=document.createElement('a');a.download=filename;a.href=out.toDataURL('image/png');a.click();setFetchStatus('success','บันทึกรูปแล้ว','สร้างไฟล์ PNG เรียบร้อย');
+    }catch(error){if(error?.name!=='AbortError')setFetchStatus('error','บันทึกหรือแชร์ไม่สำเร็จ',error.message||'กรุณาลองใหม่');}
+    finally{autoEl.saveBtn.disabled=false;requestAnimationFrame(updatePreview);}
+  }
+  async function copyReportText(){const value=String(autoEl.reportText.value||'').trim();if(!value)return;try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);else{autoEl.reportText.focus();autoEl.reportText.select();document.execCommand('copy');}autoEl.copyReportBtn.textContent='คัดลอกแล้ว';autoEl.copyStatus.textContent='คัดลอกข้อความเรียบร้อย พร้อมนำไปโพสต์ได้เลย';autoEl.copyStatus.style.color='#06964e';setTimeout(()=>{autoEl.copyReportBtn.textContent='คัดลอกข้อความรายงาน';autoEl.copyStatus.textContent='ระบบจะสรุปข้อความให้อัตโนมัติ';autoEl.copyStatus.style.color='#5f7693';},1800);}catch(_){autoEl.copyStatus.textContent='คัดลอกไม่สำเร็จ กรุณาลองใหม่';autoEl.copyStatus.style.color='#df2734';}}
+
+  allIds.forEach(id=>{const eventName=['displayMode','orderMode','size'].includes(id)?'change':'input';el[id].addEventListener(eventName,()=>{saveState();updatePreview();});});
+  autoEl.fetchBtn.addEventListener('click',fetchLatestData); autoEl.saveBtn.addEventListener('click',saveOrShareImage); autoEl.copyReportBtn.addEventListener('click',copyReportText);
+  ['p67','p1'].forEach(key=>{manualEl[key].submit.addEventListener('click',()=>submitManualCurrentValue(key));manualEl[key].value.addEventListener('keydown',event=>{if(event.key==='Enter')submitManualCurrentValue(key);});});
+  document.getElementById('resetBtn').addEventListener('click',()=>{
+    hideManualPrompt('p67');hideManualPrompt('p1');el.displayMode.value='both';el.orderMode.value='latestTop';
+    ['p67','p1'].forEach(key=>{const def=stationDefs[key];el[`${key}_name`].value=def.defaultName;el[`${key}_latest`].value=def.defaultLatest.toFixed(2);el[`${key}_change`].value='1';const now=getBangkokCurrentHour();el[`${key}_date`].value=now.date;el[`${key}_time`].value=now.time;def.defaultHistory.forEach((v,index)=>el[`${key}_h${HISTORY_HOURS-index}`].value=v.toFixed(2));});
+    el.p67_normalMax.value='2.20';el.p67_criticalMin.value='3.00';el.p1_normalMax.value='3.00';el.p1_criticalMin.value='3.70';el.size.value='960';saveState();updatePreview();setFetchStatus('','พร้อมใช้งาน','กดดึงข้อมูลเพื่ออัปเดต P.67 และ P.1');
+  });
+
+  autoEl.saveBtn.textContent=isIOSDevice()?'แชร์รูป':'บันทึกรูป';
+  loadState();syncDisplayModeUI();ensurePromptFontReady().then(updatePreview).catch(updatePreview);
+})();
+</script>
+</body>
+</html>
