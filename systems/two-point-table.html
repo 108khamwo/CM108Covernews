@@ -6,16 +6,8 @@
   <title>ระบบรายงานระดับน้ำปิง 2 จุด — ตารางบนภาพพื้นหลัง</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=block" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Prompt/Prompt.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @font-face {
-      font-family: "Prompt";
-      src: url("https://cdn.jsdelivr.net/gh/lazywasabi/thai-web-fonts@7/fonts/Prompt/Prompt-Medium.woff2") format("woff2");
-      font-style: normal;
-      font-weight: 500;
-      font-display: block;
-    }
     :root {
       --navy:#0a2f72; --blue:#0b61d8; --light:#eef7ff; --border:#c9ddf5;
       --text:#102b55; --muted:#58708f; --panel:#fff; --shadow:0 18px 50px rgba(9,62,128,.16);
@@ -240,6 +232,20 @@ body{overflow-x:hidden!important}
   const el = Object.fromEntries(allIds.map(id => [id,document.getElementById(id)]));
 
   const num = (value,fallback=0) => Number.isFinite(parseFloat(value)) ? parseFloat(value) : fallback;
+
+  // Safari บน iOS มีปัญหาจัดตำแหน่งข้อความภาษาไทยบน Canvas
+  // ใช้วิธีเดียวกับระบบ P.1: วัดความกว้างและจัดตำแหน่งด้วยพิกัดจริง
+  const IOS_CANVAS_TEXT_FIX = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  function alignedCanvasTextX(context, value, x, align = 'left') {
+    if (!IOS_CANVAS_TEXT_FIX) return x;
+    const width = context.measureText(String(value)).width;
+    if (align === 'center') return x - width / 2;
+    if (align === 'right' || align === 'end') return x - width;
+    return x;
+  }
+
   const escapeHtml = value => String(value??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
   const normalizeStationCode = value => String(value||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   function safeStorageSet(key,value){try{localStorage.setItem(key,value);return true;}catch(_){return false;}}
@@ -494,16 +500,17 @@ body{overflow-x:hidden!important}
 
   function textDraw(context, value, x, y, size, weight = 400, color = '#102b55', align = 'left', baseline = 'alphabetic', shadow = true) {
     context.save();
+    const textValue = String(value);
     context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
     context.fillStyle = color;
-    context.textAlign = align;
+    context.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : align;
     context.textBaseline = baseline;
     if (shadow) {
       context.shadowColor = 'rgba(0,0,0,.28)';
       context.shadowBlur = Math.max(2, size * 0.08);
       context.shadowOffsetY = Math.max(1, size * 0.025);
     }
-    context.fillText(String(value), x, y);
+    context.fillText(textValue, alignedCanvasTextX(context, textValue, x, align), y);
     context.restore();
   }
 
@@ -512,6 +519,7 @@ body{overflow-x:hidden!important}
     context.save();
     context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
     context.fillStyle = color;
+    context.textAlign = 'left';
     context.textBaseline = baseline;
     if (shadow) {
       context.shadowColor = 'rgba(0,0,0,.28)';
@@ -532,15 +540,16 @@ body{overflow-x:hidden!important}
 
   function textDrawCustomShadow(context, value, x, y, size, weight = 400, color = '#102b55', align = 'left', baseline = 'alphabetic', shadowColor = 'rgba(0,0,0,.38)', shadowBlur = null, shadowOffsetX = 0, shadowOffsetY = null) {
     context.save();
+    const textValue = String(value);
     context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
     context.fillStyle = color;
-    context.textAlign = align;
+    context.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : align;
     context.textBaseline = baseline;
     context.shadowColor = shadowColor;
     context.shadowBlur = shadowBlur ?? Math.max(2, size * 0.06);
     context.shadowOffsetX = shadowOffsetX;
     context.shadowOffsetY = shadowOffsetY ?? Math.max(1, size * 0.02);
-    context.fillText(String(value), x, y);
+    context.fillText(textValue, alignedCanvasTextX(context, textValue, x, align), y);
     context.restore();
   }
 
@@ -549,6 +558,7 @@ body{overflow-x:hidden!important}
     context.save();
     context.font = `${weight} ${size}px "Prompt", Tahoma, "Noto Sans Thai", Arial, sans-serif`;
     context.fillStyle = color;
+    context.textAlign = 'left';
     context.textBaseline = baseline;
     context.shadowColor = shadowColor;
     context.shadowBlur = shadowBlur ?? Math.max(2, size * 0.06);
@@ -734,18 +744,17 @@ body{overflow-x:hidden!important}
     if (promptFontReadyPromise) return promptFontReadyPromise;
     promptFontReadyPromise = (async () => {
       if (!document.fonts?.load) return;
-      const sample = '6 สิงหาคม 69 ระดับน้ำปิง';
-      await Promise.all([
-        document.fonts.load('500 50px "Prompt"', sample),
-        document.fonts.load('600 50px "Prompt"', sample),
-        document.fonts.load('700 28px "Prompt"', sample)
-      ]);
+      const sample = 'วันที่ ระดับน้ำปิง บ้านแม่แต สะพานนวรัฐ 0123456789';
+      const weights = [400, 500, 600, 700, 800];
+      await Promise.all(weights.map(weight =>
+        document.fonts.load(`${weight} 50px "Prompt"`, sample)
+      ));
       if (document.fonts?.ready) await document.fonts.ready;
       if (!document.fonts.check('500 50px "Prompt"', sample)) {
         await new Promise(resolve => setTimeout(resolve, 350));
         await document.fonts.load('500 50px "Prompt"', sample);
       }
-    })();
+    })().catch(() => {});
     return promptFontReadyPromise;
   }
 
@@ -773,13 +782,15 @@ body{overflow-x:hidden!important}
     context.save();
     context.font = `500 50px "Prompt"`;
     context.fillStyle = '#ffffff';
-    context.textAlign = 'center';
+    context.textAlign = IOS_CANVAS_TEXT_FIX ? 'left' : 'center';
     context.textBaseline = 'middle';
+    const dateText = formatThaiDateTwoDigitYear(latestDate);
+    const renderedDateX = alignedCanvasTextX(context, dateText, 850, 'center');
     context.shadowColor = 'rgba(0,0,0,.92)';
     context.shadowBlur = 7;
     context.shadowOffsetX = 5;
     context.shadowOffsetY = 6;
-    context.fillText(formatThaiDateTwoDigitYear(latestDate), 850, 214);
+    context.fillText(dateText, renderedDateX, 214);
     context.restore();
 
     // ขยายตารางจากขนาดเดิมขึ้น 10% โดยคงสัดส่วนและจัดให้อยู่กึ่งกลางภาพ
